@@ -1,0 +1,31 @@
+# Ignore node modules and build artifacts for React/JSX projects
+Frontend/node_modules/
+Frontend/dist/
+Frontend/build/
+Frontend/.cache/
+Frontend/.vite/
+Frontend/npm-debug.log*
+Frontend/yarn-debug.log*
+Frontend/yarn-error.log*
+Frontend/pnpm-debug.log*
+
+# Ignore the entire Bolt-project folder
+Bolt-project/
+
+# Ignore .cora workspace/config folder
+.cora/
+
+# Ignore all markdown files except the main README files
+*.md
+!README.md
+!Readme.md
+!Readme..md
+
+# Common ignores
+.DS_Store
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
