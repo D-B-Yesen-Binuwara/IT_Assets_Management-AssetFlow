@@ -1,0 +1,103 @@
+import { Link, useParams } from 'react-router-dom';
+import { Button } from '../common/Button';
+import { Card, CardHeader } from '../common/Card';
+import { Icon } from '../common/Icon';
+import { PageHeader } from '../common/PageHeader';
+import { EmptyState, ErrorState, LoadingState } from '../common/State';
+import { useResource } from '../../hooks/useResource';
+
+const visibleDetailFields = (item) =>
+  Object.entries(item)
+    .filter(
+      ([key, value]) =>
+        ['id', 'description'].includes(key) === false &&
+        ['object', 'function'].includes(typeof value) === false,
+    )
+    .slice(0, 12);
+
+const formatLabel = (key) =>
+  key.replace(/[A-Z]/g, (letter) => ` ${letter}`).replace(/^./, (letter) => letter.toUpperCase());
+
+export function DetailsPage({ config }) {
+  const { id } = useParams();
+  const resource = useResource(() => config.service.get(id), id);
+
+  if (resource.status === 'loading') {
+    return <LoadingState label={`Loading ${config.singular}`} />;
+  }
+
+  if (resource.status === 'error') {
+    return (
+      <>
+        <PageHeader
+          title={`${config.singular} details`}
+          breadcrumbs={[{ label: config.title, to: config.listPath }]}
+        />
+        <ErrorState error={resource.error} onRetry={resource.reload} />
+      </>
+    );
+  }
+
+  if (!resource.data) {
+    return (
+      <>
+        <PageHeader
+          title={`${config.singular} details`}
+          breadcrumbs={[{ label: config.title, to: config.listPath }]}
+        />
+        <EmptyState
+          icon={config.icon}
+          title={`${config.singular} not found`}
+          description="No backend record was returned for this identifier."
+        />
+      </>
+    );
+  }
+
+  const item = resource.data;
+
+  // The detail page renders only primitive fields supplied by the backend record.
+  return (
+    <>
+      <PageHeader
+        title={item.name || item.title || `${config.singular} ${id}`}
+        description={item.description || `Reference ${id}`}
+        breadcrumbs={[{ label: config.title, to: config.listPath }, { label: id }]}
+        actions={
+          <>
+            <Button variant="outline" icon="arrowLeft">
+              Back
+            </Button>
+            <Button icon="more">More actions</Button>
+          </>
+        }
+      />
+
+      <div className="detail-grid">
+        <Card>
+          <CardHeader title="Overview" description="Fields supplied by the backend record." />
+          <div className="detail-fields">
+            {visibleDetailFields(item).map(([key, value]) => (
+              <div key={key}>
+                <span>{formatLabel(key)}</span>
+                <strong>{String(value ?? '-')}</strong>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <CardHeader title="Activity" description="Lifecycle events from the backend." />
+          <div className="activity-empty">
+            <Icon name="refresh" size={20} />
+            <p>Activity history will appear here when this record is available.</p>
+          </div>
+        </Card>
+      </div>
+
+      <Link className="back-link" to={config.listPath}>
+        <Icon name="arrowLeft" size={16} /> Return to {config.title}
+      </Link>
+    </>
+  );
+}

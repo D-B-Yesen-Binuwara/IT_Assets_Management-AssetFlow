@@ -1,0 +1,15 @@
+export const iconNames = {
+  dashboard: 'dashboard',
+  assets: 'assets',
+  users: 'users',
+  transfer: 'transfer',
+  wrench: 'wrench',
+  shield: 'shield',
+  server: 'server',
+  building: 'building',
+  cart: 'cart',
+  pin: 'pin',
+  chart: 'chart',
+  bell: 'bell',
+  settings: 'settings',
+};
