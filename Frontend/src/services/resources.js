@@ -11,7 +11,17 @@ const collection = (path) => ({
   remove: (id) => request(`${path}/${id}`, { method: 'DELETE' }),
 });
 
-export const assetService = collection('/assets');
+const assetCollection = collection('/assets');
+
+export const assetService = {
+  ...assetCollection,
+  transfer: (assetId, payload) =>
+    request(`/assets/${assetId}/transfers`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  transferHistory: (assetId) => request(`/assets/${assetId}/transfers`),
+};
 export const employeeService = collection('/employees');
 export const assignmentService = collection('/assignments');
 export const maintenanceService = collection('/maintenance');
@@ -38,4 +48,3 @@ export const settingsService = {
   get: () => request('/settings'),
   update: (payload) => request('/settings', { method: 'PATCH', body: JSON.stringify(payload) }),
 };
-

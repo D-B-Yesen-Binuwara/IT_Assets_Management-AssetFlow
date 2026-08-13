@@ -11,6 +11,7 @@ export function Table({
   emptyTitle = 'No records found',
   emptyDescription = 'Records will appear here once the backend returns them.',
   searchPlaceholder = 'Search records...',
+  rowActions,
 }) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState({ key: null, direction: 'asc' });
@@ -84,6 +85,7 @@ export function Table({
                     </button>
                   </th>
                 ))}
+                {rowActions && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -94,6 +96,7 @@ export function Table({
                       {column.render ? column.render(row) : column.value(row)}
                     </td>
                   ))}
+                  {rowActions && <td className="table-actions">{rowActions(row)}</td>}
                 </tr>
               ))}
             </tbody>
