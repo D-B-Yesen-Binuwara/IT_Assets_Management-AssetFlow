@@ -53,4 +53,19 @@ public class AppUser extends TimestampedEntity {
 
     @OneToMany(mappedBy = "recipientUser")
     private Set<Notification> notifications = new HashSet<>();
+
+    @OneToMany(mappedBy = "requestedByUser")
+    private Set<AssetTransfer> requestedTransfers = new HashSet<>();
+
+    @OneToMany(mappedBy = "approvedByUser")
+    private Set<AssetTransfer> approvedTransfers = new HashSet<>();
+
+    @OneToMany(mappedBy = "assignedToUser")
+    private Set<WarrantyClaim> assignedWarrantyClaims = new HashSet<>();
+
+    @OneToMany(mappedBy = "user")
+    private Set<NotificationPreference> notificationPreferences = new HashSet<>();
+
+    @OneToMany(mappedBy = "updatedBy")
+    private Set<EmailTemplate> emailTemplates = new HashSet<>();
 }

@@ -71,6 +71,9 @@ public class PurchaseOrder extends TimestampedEntity {
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PurchaseOrderItem> items = new ArrayList<>();
 
+    @OneToMany(mappedBy = "purchaseOrder")
+    private List<Invoice> invoices = new ArrayList<>();
+
     @jakarta.persistence.PrePersist
     protected void onCreate() {
         if (orderDate == null) {

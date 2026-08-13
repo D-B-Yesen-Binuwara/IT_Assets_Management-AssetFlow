@@ -32,4 +32,13 @@ public class Department extends TimestampedEntity {
 
     @OneToMany(mappedBy = "department")
     private Set<Employee> employees = new HashSet<>();
+
+    @OneToMany(mappedBy = "department")
+    private Set<Asset> assets = new HashSet<>();
+
+    @OneToMany(mappedBy = "previousDepartment")
+    private Set<EmployeeDepartmentHistory> previousDepartmentHistory = new HashSet<>();
+
+    @OneToMany(mappedBy = "newDepartment")
+    private Set<EmployeeDepartmentHistory> newDepartmentHistory = new HashSet<>();
 }

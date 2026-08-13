@@ -65,4 +65,13 @@ public class Employee extends TimestampedEntity {
 
     @OneToMany(mappedBy = "employee")
     private Set<LicenseAssignment> licenseAssignments = new HashSet<>();
+
+    @OneToMany(mappedBy = "previousEmployee")
+    private Set<AssetTransfer> outgoingAssetTransfers = new HashSet<>();
+
+    @OneToMany(mappedBy = "newEmployee")
+    private Set<AssetTransfer> incomingAssetTransfers = new HashSet<>();
+
+    @OneToMany(mappedBy = "employee")
+    private Set<EmployeeDepartmentHistory> departmentHistory = new HashSet<>();
 }
