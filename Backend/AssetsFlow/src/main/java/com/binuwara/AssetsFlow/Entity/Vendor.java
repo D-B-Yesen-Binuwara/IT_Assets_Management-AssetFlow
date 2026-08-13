@@ -49,4 +49,13 @@ public class Vendor extends TimestampedEntity {
 
     @OneToMany(mappedBy = "vendor")
     private Set<PurchaseOrder> purchaseOrders = new HashSet<>();
+
+    @OneToMany(mappedBy = "vendor")
+    private Set<WarrantyPolicy> warrantyPolicies = new HashSet<>();
+
+    @OneToMany(mappedBy = "vendor")
+    private Set<Invoice> invoices = new HashSet<>();
+
+    @OneToMany(mappedBy = "vendor")
+    private Set<VendorContract> contracts = new HashSet<>();
 }

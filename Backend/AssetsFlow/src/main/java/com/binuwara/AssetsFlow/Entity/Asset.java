@@ -16,7 +16,9 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -66,6 +68,10 @@ public class Asset extends TimestampedEntity {
     @JoinColumn(name = "location_id")
     private Location location;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 25)
     private AssetStatus status = AssetStatus.AVAILABLE;
@@ -88,6 +94,18 @@ public class Asset extends TimestampedEntity {
     @OneToMany(mappedBy = "asset")
     private Set<MaintenanceTicket> maintenanceTickets = new HashSet<>();
 
+    @OneToMany(mappedBy = "asset")
+    private List<WarrantyPolicy> warrantyPolicies = new ArrayList<>();
+
     @OneToOne(mappedBy = "asset")
-    private WarrantyPolicy warrantyPolicy;
+    private AssetDisposal disposal;
+
+    @OneToMany(mappedBy = "asset")
+    private List<AssetValuation> valuations = new ArrayList<>();
+
+    @OneToMany(mappedBy = "asset")
+    private List<AssetLifecycleEvent> lifecycleEvents = new ArrayList<>();
+
+    @OneToMany(mappedBy = "asset")
+    private List<AssetTransfer> transfers = new ArrayList<>();
 }

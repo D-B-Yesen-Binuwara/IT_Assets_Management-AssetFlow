@@ -26,6 +26,10 @@ public class WarrantyClaim extends BaseEntity {
     @JoinColumn(name = "warranty_id", nullable = false)
     private WarrantyPolicy warranty;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to_user_id")
+    private AppUser assignedToUser;
+
     @Column(name = "claim_number", nullable = false, unique = true, length = 80)
     private String claimNumber;
 
@@ -45,10 +49,25 @@ public class WarrantyClaim extends BaseEntity {
     @Column(name = "claimed_amount", precision = 14, scale = 2)
     private BigDecimal claimedAmount;
 
+    @Column(name = "provider_reference", length = 120)
+    private String providerReference;
+
+    @Column(name = "resolution_notes")
+    private String resolutionNotes;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
     @jakarta.persistence.PrePersist
     protected void onCreate() {
         if (openedAt == null) {
             openedAt = Instant.now();
         }
+        updatedAt = Instant.now();
+    }
+
+    @jakarta.persistence.PreUpdate
+    protected void onUpdate() {
+        updatedAt = Instant.now();
     }
 }

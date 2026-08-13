@@ -14,6 +14,8 @@ import lombok.Setter;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -49,6 +51,15 @@ public class Assignment extends BaseEntity {
 
     @Column(name = "handover_notes")
     private String handoverNotes;
+
+    @jakarta.persistence.OneToMany(mappedBy = "previousAssignment")
+    private Set<AssetTransfer> outgoingTransfers = new HashSet<>();
+
+    @jakarta.persistence.OneToMany(mappedBy = "newAssignment")
+    private Set<AssetTransfer> incomingTransfers = new HashSet<>();
+
+    @jakarta.persistence.OneToMany(mappedBy = "assignment")
+    private Set<AssetLifecycleEvent> lifecycleEvents = new HashSet<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
