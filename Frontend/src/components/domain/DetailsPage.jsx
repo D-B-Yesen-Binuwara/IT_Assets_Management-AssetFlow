@@ -4,6 +4,7 @@ import { Card, CardHeader } from '../common/Card';
 import { Icon } from '../common/Icon';
 import { PageHeader } from '../common/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '../common/State';
+import { AssetTransferHistory } from './AssetTransferHistory';
 import { useResource } from '../../hooks/useResource';
 
 const visibleDetailFields = (item) =>
@@ -94,6 +95,8 @@ export function DetailsPage({ config }) {
           </div>
         </Card>
       </div>
+
+      {config.transferHistory && <AssetTransferHistory assetId={id} />}
 
       <Link className="back-link" to={config.listPath}>
         <Icon name="arrowLeft" size={16} /> Return to {config.title}

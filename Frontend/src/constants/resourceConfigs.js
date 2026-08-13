@@ -35,6 +35,7 @@ export const resourceConfigs = {
     singular: 'asset',
     icon: 'assets',
     service: assetService,
+    transferHistory: true,
     description: 'Manage the complete asset inventory across every category and lifecycle stage.',
     stats: [
       { label: 'Total assets', icon: 'assets', tone: 'indigo' },
