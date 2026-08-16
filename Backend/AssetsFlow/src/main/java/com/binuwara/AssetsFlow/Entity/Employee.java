@@ -40,6 +40,9 @@ public class Employee extends TimestampedEntity {
     @Column(length = 40)
     private String phone;
 
+    @Column(length = 255)
+    private String address;
+
     @Column(name = "job_title", length = 120)
     private String jobTitle;
 
