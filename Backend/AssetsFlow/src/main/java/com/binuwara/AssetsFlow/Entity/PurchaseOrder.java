@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.sql.Types;
 
 @Getter
 @Setter
@@ -54,7 +56,8 @@ public class PurchaseOrder extends TimestampedEntity {
     @Column(nullable = false, length = 20)
     private PurchaseOrderStatus status = PurchaseOrderStatus.DRAFT;
 
-    @Column(nullable = false, length = 3)
+    @JdbcTypeCode(Types.CHAR)
+    @Column(columnDefinition = "char(3)", nullable = false, length = 3)
     private String currency = "USD";
 
     @Column(nullable = false, precision = 14, scale = 2)

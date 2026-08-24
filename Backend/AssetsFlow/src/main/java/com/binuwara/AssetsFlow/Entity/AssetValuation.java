@@ -6,6 +6,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,6 +14,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.sql.Types;
 
 @Getter
 @Setter
@@ -40,7 +42,8 @@ public class AssetValuation extends BaseEntity {
     @Column(name = "valuation_method", length = 50)
     private String valuationMethod;
 
-    @Column(nullable = false, length = 3)
+    @JdbcTypeCode(Types.CHAR)
+    @Column(columnDefinition = "char(3)", nullable = false, length = 3)
     private String currency = "USD";
 
     @ManyToOne(fetch = FetchType.LAZY)

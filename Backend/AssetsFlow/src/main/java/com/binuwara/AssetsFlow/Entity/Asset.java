@@ -10,6 +10,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.sql.Types;
 
 @Getter
 @Setter
@@ -61,7 +63,8 @@ public class Asset extends TimestampedEntity {
     @Column(name = "purchase_cost", precision = 14, scale = 2)
     private BigDecimal purchaseCost;
 
-    @Column(nullable = false, length = 3)
+    @JdbcTypeCode(Types.CHAR)
+    @Column(columnDefinition = "char(3)", nullable = false, length = 3)
     private String currency = "USD";
 
     @ManyToOne(fetch = FetchType.LAZY)
