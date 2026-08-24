@@ -8,12 +8,14 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.sql.Types;
 
 @Getter
 @Setter
@@ -46,7 +48,8 @@ public class Invoice extends TimestampedEntity {
     @Column(nullable = false, length = 20)
     private InvoiceStatus status = InvoiceStatus.RECEIVED;
 
-    @Column(nullable = false, length = 3)
+    @JdbcTypeCode(Types.CHAR)
+    @Column(columnDefinition = "char(3)", nullable = false, length = 3)
     private String currency = "USD";
 
     @Column(nullable = false, precision = 14, scale = 2)

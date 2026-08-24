@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public record MaintenanceRequest(
         UUID assetId,
+        String ticketNumber,
         String issue,
         String description,
         String priority,

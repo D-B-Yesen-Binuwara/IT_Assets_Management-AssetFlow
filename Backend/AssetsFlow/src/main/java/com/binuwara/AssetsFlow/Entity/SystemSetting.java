@@ -7,6 +7,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -24,6 +26,7 @@ public class SystemSetting {
     @Column(name = "setting_key", nullable = false, length = 100)
     private String settingKey;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "setting_value", nullable = false, columnDefinition = "jsonb")
     private String settingValue;
 

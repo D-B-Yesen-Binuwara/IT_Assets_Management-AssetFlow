@@ -9,11 +9,14 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.sql.Types;
 
 @Getter
 @Setter
@@ -35,15 +38,18 @@ public class OrganizationSettings {
     @Column(name = "primary_contact", length = 180)
     private String primaryContact;
 
-    @Column(nullable = false, length = 3)
+    @JdbcTypeCode(Types.CHAR)
+    @Column(columnDefinition = "char(3)", nullable = false, length = 3)
     private String currency = "USD";
 
     @Column(nullable = false, length = 80)
     private String timezone = "UTC";
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)
     private String branding = "{}";
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "notification_settings", columnDefinition = "jsonb", nullable = false)
     private String notificationSettings = "{}";
 

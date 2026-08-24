@@ -11,6 +11,7 @@ public record WarrantyRequest(
         LocalDate startDate,
         LocalDate endDate,
         String coverage,
-        String status
+        String status,
+        Boolean current
 ) {
 }
