@@ -1,6 +1,10 @@
 package com.binuwara.AssetsFlow.Config;
 
 import com.binuwara.AssetsFlow.Security.JwtAuthenticationFilter;
+import com.binuwara.AssetsFlow.Entity.EmployeeStatus;
+import com.binuwara.AssetsFlow.Entity.UserStatus;
+import com.binuwara.AssetsFlow.Repository.AppUserRepository;
+import com.binuwara.AssetsFlow.Security.RoleNames;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +16,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -30,6 +37,25 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService(AppUserRepository appUserRepository) {
+        return username -> appUserRepository.findByUsernameIgnoreCase(username)
+                .map(user -> {
+                    boolean employeeEnabled = user.getEmployee() == null
+                            || (user.getEmployee().getStatus() != EmployeeStatus.INACTIVE
+                            && user.getEmployee().getStatus() != EmployeeStatus.TERMINATED);
+                    String[] authorities = user.getRoles().stream()
+                            .map(role -> "ROLE_" + RoleNames.normalize(role.getName()))
+                            .toArray(String[]::new);
+                    return User.withUsername(user.getUsername())
+                            .password(user.getPasswordHash())
+                            .authorities(authorities)
+                            .disabled(user.getStatus() != UserStatus.ACTIVE || !employeeEnabled)
+                            .build();
+                })
+                .orElseThrow(() -> new UsernameNotFoundException("Account was not found."));
     }
 
     @Bean
