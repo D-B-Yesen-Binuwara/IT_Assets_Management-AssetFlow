@@ -7,16 +7,21 @@ import { PageHeader } from '../common/PageHeader';
 import { StatCard } from '../common/StatCard';
 import { Table } from '../common/Table';
 import { useAction, useResource } from '../../hooks/useResource';
+import { collectionItems } from '../../utils/collections';
 
 export function ResourcePage({ config }) {
   const resource = useResource(() => config.service.list(), 'list');
   const [modalOpen, setModalOpen] = useState(false);
   const createAction = useAction(config.service.create);
-  const rows = Array.isArray(resource.data) ? resource.data : resource.data?.items;
+  const rows = collectionItems(resource.data);
+  const stats = config.stats.map((stat) => ({
+    ...stat,
+    value: stat.getValue ? stat.getValue(rows) : '\u2014',
+  }));
 
   const submit = async (payload) => {
     try {
-      await createAction.execute(payload);
+      await createAction.execute(config.toRequest ? config.toRequest(payload) : payload);
       setModalOpen(false);
       resource.reload();
     } catch {
@@ -43,7 +48,7 @@ export function ResourcePage({ config }) {
       />
 
       <div className="stats-grid">
-        {config.stats.map((stat) => (
+        {stats.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </div>
@@ -86,7 +91,7 @@ export function ResourcePage({ config }) {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={config.actionLabel || `Add ${config.singular}`}
-        description="This request will be sent to the backend when the API is available."
+        description="This request will be validated and sent to the backend API."
       >
         <BackendForm
           fields={config.fields}
