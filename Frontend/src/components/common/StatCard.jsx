@@ -1,6 +1,6 @@
 import { Icon } from './Icon';
 
-export function StatCard({ label, icon, tone = 'indigo', helper }) {
+export function StatCard({ label, icon, tone = 'indigo', helper, value = '\u2014' }) {
   return (
     <div className={`stat-card stat-${tone}`}>
       <div className="stat-icon">
@@ -9,7 +9,7 @@ export function StatCard({ label, icon, tone = 'indigo', helper }) {
 
       <div>
         <p>{label}</p>
-        <strong>&mdash;</strong>
+        <strong>{value}</strong>
         {helper && <small>{helper}</small>}
       </div>
     </div>

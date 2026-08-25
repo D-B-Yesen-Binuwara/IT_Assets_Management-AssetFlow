@@ -2,8 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { routeLabels } from '../../constants/navigation';
 import { Icon } from '../common/Icon';
+import { useAuth } from '../../auth/useAuth';
+import { useResource } from '../../hooks/useResource';
+import { notificationService } from '../../services/resources';
+import { collectionItems } from '../../utils/collections';
 
 export function Topbar({ onMenuClick, theme, onToggleTheme }) {
+  const { user, logout } = useAuth();
+  const unreadNotifications = useResource(() => notificationService.list({ filter: 'unread' }), 'unread');
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -11,6 +17,9 @@ export function Topbar({ onMenuClick, theme, onToggleTheme }) {
   const searchRef = useRef(null);
   const label =
     routeLabels[location.pathname] || routeLabels[`/${location.pathname.split('/')[1]}`] || 'Workspace';
+  const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.username || 'Account';
+  const initials = [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join('').toUpperCase() || 'AF';
+  const unreadCount = collectionItems(unreadNotifications.data).length;
 
   useEffect(() => {
     const handler = (event) => {
@@ -84,15 +93,15 @@ export function Topbar({ onMenuClick, theme, onToggleTheme }) {
           <Icon name={theme === 'light' ? 'moon' : 'sun'} />
         </button>
 
-        <Link className="icon-button notification-link" to="/notifications" aria-label="Notifications">
+        <Link className="icon-button notification-link" to="/notifications" aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}>
           <Icon name="bell" />
-          <span />
+          {unreadCount > 0 && <span />}
         </Link>
 
         <div className="profile-menu">
           <button className="profile-trigger" onClick={() => setProfileOpen((value) => !value)}>
-            <span className="avatar">AM</span>
-            <span className="profile-name">Account</span>
+            <span className="avatar">{initials}</span>
+            <span className="profile-name">{displayName}</span>
             <Icon name="chevronDown" size={14} />
           </button>
 
@@ -100,17 +109,17 @@ export function Topbar({ onMenuClick, theme, onToggleTheme }) {
             <div className="profile-popover">
               <p className="popover-label">Signed-in user</p>
               <div className="profile-row">
-                <span className="avatar">AM</span>
+                <span className="avatar">{initials}</span>
                 <div>
-                  <strong>Account profile</strong>
-                  <small>Connect identity provider</small>
+                  <strong>{displayName}</strong>
+                  <small>{user?.email || user?.username || 'AssetFlow user'}</small>
                 </div>
               </div>
 
               <Link to="/settings" onClick={() => setProfileOpen(false)}>
                 <Icon name="settings" size={16} /> Settings
               </Link>
-              <button>
+              <button type="button" onClick={logout}>
                 <Icon name="logout" size={16} /> Sign out
               </button>
             </div>

@@ -19,6 +19,15 @@ const text = (key, label, placeholder, required = true) => ({
   required,
 });
 
+const choice = (key, label, placeholder, options, required = true) => ({
+  name: key,
+  label,
+  placeholder,
+  required,
+  type: 'select',
+  options: options.map((value) => ({ value, label: value.replace(/_/g, ' ') })),
+});
+
 const value = (key, label, render) => ({
   key,
   label,
@@ -38,10 +47,10 @@ export const resourceConfigs = {
     transferHistory: true,
     description: 'Manage the complete asset inventory across every category and lifecycle stage.',
     stats: [
-      { label: 'Total assets', icon: 'assets', tone: 'indigo' },
-      { label: 'Available', icon: 'assets', tone: 'green' },
-      { label: 'Assigned', icon: 'transfer', tone: 'blue' },
-      { label: 'Under maintenance', icon: 'wrench', tone: 'amber' },
+      { label: 'Total assets', icon: 'assets', tone: 'indigo', getValue: (rows) => rows.length },
+      { label: 'Available', icon: 'assets', tone: 'green', getValue: (rows) => rows.filter((row) => row.status === 'AVAILABLE').length },
+      { label: 'Assigned', icon: 'transfer', tone: 'blue', getValue: (rows) => rows.filter((row) => row.status === 'ASSIGNED').length },
+      { label: 'Under maintenance', icon: 'wrench', tone: 'amber', getValue: (rows) => rows.filter((row) => row.status === 'UNDER_MAINTENANCE').length },
     ],
     columns: [
       value('assetTag', 'Asset tag'),
@@ -54,7 +63,11 @@ export const resourceConfigs = {
       text('assetTag', 'Asset tag', 'e.g. AST-0001'),
       text('name', 'Asset name', 'e.g. Industrial laptop'),
       text('category', 'Category', 'e.g. Laptop'),
-      text('serialNumber', 'Serial number', 'Enter serial number'),
+      text('serialNumber', 'Serial number', 'Enter serial number', false),
+      text('manufacturer', 'Manufacturer', 'Optional manufacturer', false),
+      text('model', 'Model', 'Optional model', false),
+      text('location', 'Location name or code', 'Optional location', false),
+      text('department', 'Department name or code', 'Optional department', false),
     ],
   },
 
@@ -65,9 +78,9 @@ export const resourceConfigs = {
     service: employeeService,
     description: 'Manage workforce records, departments, and asset assignments.',
     stats: [
-      { label: 'Total employees', icon: 'users', tone: 'indigo' },
-      { label: 'Active', icon: 'users', tone: 'green' },
-      { label: 'Departments', icon: 'building', tone: 'blue' },
+      { label: 'Total employees', icon: 'users', tone: 'indigo', getValue: (rows) => rows.length },
+      { label: 'Active', icon: 'users', tone: 'green', getValue: (rows) => rows.filter((row) => row.status === 'ACTIVE').length },
+      { label: 'Departments', icon: 'building', tone: 'blue', getValue: (rows) => new Set(rows.map((row) => row.department).filter(Boolean)).size },
     ],
     columns: [
       value('employeeNumber', 'Employee ID'),
@@ -80,7 +93,8 @@ export const resourceConfigs = {
       text('employeeNumber', 'Employee ID', 'Enter employee ID'),
       text('name', 'Full name', 'Enter full name'),
       text('email', 'Work email', 'name@company.com'),
-      text('department', 'Department', 'Enter department'),
+      text('department', 'Department name or code', 'Optional department', false),
+      text('phone', 'Phone', 'Optional phone number', false),
     ],
   },
 
@@ -92,10 +106,10 @@ export const resourceConfigs = {
     description: 'Assign, return, and transfer assets across the organization.',
     actionLabel: 'New assignment',
     stats: [
-      { label: 'Active assignments', icon: 'transfer', tone: 'blue' },
-      { label: 'Returned', icon: 'refresh', tone: 'slate' },
-      { label: 'Transferred', icon: 'transfer', tone: 'violet' },
-      { label: 'Total records', icon: 'assets', tone: 'indigo' },
+      { label: 'Active assignments', icon: 'transfer', tone: 'blue', getValue: (rows) => rows.filter((row) => row.status === 'ACTIVE').length },
+      { label: 'Returned', icon: 'refresh', tone: 'slate', getValue: (rows) => rows.filter((row) => row.status === 'RETURNED').length },
+      { label: 'Transferred', icon: 'transfer', tone: 'violet', getValue: (rows) => rows.filter((row) => row.status === 'TRANSFERRED').length },
+      { label: 'Total records', icon: 'assets', tone: 'indigo', getValue: (rows) => rows.length },
     ],
     columns: [
       value('assetTag', 'Asset tag'),
@@ -107,7 +121,8 @@ export const resourceConfigs = {
     fields: [
       text('assetId', 'Asset ID', 'Enter asset ID'),
       text('employeeId', 'Employee ID', 'Enter employee ID'),
-      text('assignedDate', 'Assignment date', 'YYYY-MM-DD'),
+      text('assignedDate', 'Assignment date', 'YYYY-MM-DD', false),
+      text('expectedReturnDate', 'Expected return date', 'YYYY-MM-DD', false),
     ],
   },
 
@@ -122,10 +137,10 @@ export const resourceConfigs = {
       description: 'Monthly repair and preventive maintenance spend.',
     },
     stats: [
-      { label: 'Open tickets', icon: 'wrench', tone: 'amber' },
-      { label: 'In progress', icon: 'wrench', tone: 'blue' },
-      { label: 'Completed', icon: 'shield', tone: 'green' },
-      { label: 'Total cost', icon: 'chart', tone: 'rose' },
+      { label: 'Open tickets', icon: 'wrench', tone: 'amber', getValue: (rows) => rows.filter((row) => row.status === 'OPEN').length },
+      { label: 'In progress', icon: 'wrench', tone: 'blue', getValue: (rows) => rows.filter((row) => row.status === 'IN_PROGRESS').length },
+      { label: 'Completed', icon: 'shield', tone: 'green', getValue: (rows) => rows.filter((row) => row.status === 'COMPLETED').length },
+      { label: 'Total cost', icon: 'chart', tone: 'rose', getValue: (rows) => rows.reduce((sum, row) => sum + Number(row.cost || 0), 0).toFixed(2) },
     ],
     columns: [
       value('ticketNumber', 'Ticket'),
@@ -138,8 +153,8 @@ export const resourceConfigs = {
     fields: [
       text('assetId', 'Asset ID', 'Enter asset ID'),
       text('issue', 'Issue summary', 'Describe the issue'),
-      text('priority', 'Priority', 'e.g. High'),
-      text('dueDate', 'Due date', 'YYYY-MM-DD'),
+      choice('priority', 'Priority', 'Select priority', ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+      text('dueDate', 'Due date', 'YYYY-MM-DD', false),
     ],
   },
 
@@ -154,10 +169,10 @@ export const resourceConfigs = {
       description: 'Assets grouped by remaining warranty period.',
     },
     stats: [
-      { label: 'Active warranties', icon: 'shield', tone: 'green' },
-      { label: 'Expiring soon', icon: 'warning', tone: 'amber' },
-      { label: 'Expired', icon: 'shield', tone: 'rose' },
-      { label: 'Claims filed', icon: 'shield', tone: 'indigo' },
+      { label: 'Active warranties', icon: 'shield', tone: 'green', getValue: (rows) => rows.filter((row) => row.status === 'ACTIVE').length },
+      { label: 'Expiring soon', icon: 'warning', tone: 'amber', getValue: (rows) => rows.filter((row) => row.status === 'EXPIRING').length },
+      { label: 'Expired', icon: 'shield', tone: 'rose', getValue: (rows) => rows.filter((row) => row.status === 'EXPIRED').length },
+      { label: 'Claims filed', icon: 'shield', tone: 'indigo', getValue: (rows) => rows.reduce((sum, row) => sum + Number(row.claimCount || 0), 0) },
     ],
     columns: [
       value('assetTag', 'Asset tag'),
@@ -168,7 +183,7 @@ export const resourceConfigs = {
     ],
     fields: [
       text('assetId', 'Asset ID', 'Enter asset ID'),
-      text('provider', 'Warranty provider', 'Enter provider'),
+      text('provider', 'Warranty provider name', 'Must match an existing vendor'),
       text('startDate', 'Start date', 'YYYY-MM-DD'),
       text('endDate', 'End date', 'YYYY-MM-DD'),
     ],
@@ -181,9 +196,9 @@ export const resourceConfigs = {
     service: vendorService,
     description: 'Manage suppliers, contracts, and procurement relationships.',
     stats: [
-      { label: 'Total vendors', icon: 'building', tone: 'indigo' },
-      { label: 'Active', icon: 'shield', tone: 'green' },
-      { label: 'Total spend', icon: 'chart', tone: 'blue' },
+      { label: 'Total vendors', icon: 'building', tone: 'indigo', getValue: (rows) => rows.length },
+      { label: 'Active', icon: 'shield', tone: 'green', getValue: (rows) => rows.filter((row) => row.status === 'ACTIVE').length },
+      { label: 'Purchase orders', icon: 'chart', tone: 'blue', getValue: (rows) => rows.reduce((sum, row) => sum + Number(row.purchaseOrderCount || 0), 0) },
     ],
     columns: [
       value('name', 'Vendor'),
@@ -194,9 +209,9 @@ export const resourceConfigs = {
     ],
     fields: [
       text('name', 'Vendor name', 'Enter vendor name'),
-      text('contact', 'Primary contact', 'Enter contact name'),
-      text('email', 'Email', 'contact@vendor.com'),
-      text('category', 'Category', 'Enter category'),
+      text('contact', 'Primary contact', 'Enter contact name', false),
+      text('email', 'Email', 'contact@vendor.com', false),
+      text('category', 'Category', 'Enter category', false),
     ],
   },
 
@@ -211,10 +226,10 @@ export const resourceConfigs = {
       description: 'Used seats compared with licensed capacity.',
     },
     stats: [
-      { label: 'Total licenses', icon: 'server', tone: 'indigo' },
-      { label: 'Active', icon: 'server', tone: 'green' },
-      { label: 'Expiring', icon: 'warning', tone: 'amber' },
-      { label: 'Total seats', icon: 'users', tone: 'blue' },
+      { label: 'Total licenses', icon: 'server', tone: 'indigo', getValue: (rows) => rows.length },
+      { label: 'Active', icon: 'server', tone: 'green', getValue: (rows) => rows.filter((row) => row.status === 'ACTIVE').length },
+      { label: 'Expiring', icon: 'warning', tone: 'amber', getValue: (rows) => rows.filter((row) => row.status === 'EXPIRING').length },
+      { label: 'Total seats', icon: 'users', tone: 'blue', getValue: (rows) => rows.reduce((sum, row) => sum + Number(row.seats || row.seatCount || 0), 0) },
     ],
     columns: [
       value('software', 'Software'),
@@ -226,9 +241,9 @@ export const resourceConfigs = {
     ],
     fields: [
       text('software', 'Software name', 'Enter software name'),
-      text('vendor', 'Vendor', 'Enter vendor'),
-      text('licenseType', 'License type', 'Subscription or perpetual'),
-      text('endDate', 'Renewal date', 'YYYY-MM-DD'),
+      text('vendor', 'Vendor name', 'Optional existing vendor', false),
+      choice('licenseType', 'License type', 'Select license type', ['SUBSCRIPTION', 'PERPETUAL', 'OPEN_SOURCE', 'TRIAL']),
+      text('endDate', 'Renewal date', 'YYYY-MM-DD', false),
     ],
   },
 
@@ -239,23 +254,24 @@ export const resourceConfigs = {
     service: procurementService,
     description: 'Manage purchase orders, invoices, and received assets.',
     stats: [
-      { label: 'Total POs', icon: 'cart', tone: 'indigo' },
-      { label: 'Received', icon: 'assets', tone: 'green' },
-      { label: 'Pending', icon: 'cart', tone: 'amber' },
-      { label: 'Total spend', icon: 'chart', tone: 'blue' },
+      { label: 'Total POs', icon: 'cart', tone: 'indigo', getValue: (rows) => rows.length },
+      { label: 'Received', icon: 'assets', tone: 'green', getValue: (rows) => rows.filter((row) => row.status === 'RECEIVED').length },
+      { label: 'Pending', icon: 'cart', tone: 'amber', getValue: (rows) => rows.filter((row) => !['RECEIVED', 'CANCELLED'].includes(row.status)).length },
+      { label: 'Total spend', icon: 'chart', tone: 'blue', getValue: (rows) => rows.reduce((sum, row) => sum + Number(row.totalAmount || 0), 0).toFixed(2) },
     ],
     columns: [
       value('poNumber', 'PO number'),
       value('vendor', 'Vendor'),
       value('orderDate', 'Order date'),
       value('expectedDate', 'Expected'),
-      value('total', 'Total'),
+      value('totalAmount', 'Total'),
       value('status', 'Status', status()),
     ],
     fields: [
-      text('vendorId', 'Vendor ID', 'Enter vendor ID'),
-      text('requestedBy', 'Requested by', 'Enter employee ID'),
-      text('expectedDate', 'Expected date', 'YYYY-MM-DD'),
+      text('poNumber', 'PO number', 'e.g. PO-0001'),
+      text('vendorId', 'Vendor ID', 'Enter vendor UUID'),
+      text('requestedByEmployeeId', 'Requested by employee ID', 'Optional employee UUID', false),
+      text('expectedDate', 'Expected date', 'YYYY-MM-DD', false),
       text('notes', 'Notes', 'Optional notes', false),
     ],
   },
@@ -267,9 +283,9 @@ export const resourceConfigs = {
     service: locationService,
     description: 'Organize assets across branches, buildings, floors, and rooms.',
     stats: [
-      { label: 'Total locations', icon: 'pin', tone: 'indigo' },
-      { label: 'Branches', icon: 'building', tone: 'blue' },
-      { label: 'Assets tracked', icon: 'assets', tone: 'green' },
+      { label: 'Total locations', icon: 'pin', tone: 'indigo', getValue: (rows) => rows.length },
+      { label: 'Branches', icon: 'building', tone: 'blue', getValue: (rows) => rows.filter((row) => row.type === 'BRANCH').length },
+      { label: 'Assets tracked', icon: 'assets', tone: 'green', getValue: (rows) => rows.reduce((sum, row) => sum + Number(row.assetCount || 0), 0) },
     ],
     columns: [
       value('name', 'Location'),
@@ -280,9 +296,9 @@ export const resourceConfigs = {
     ],
     fields: [
       text('name', 'Location name', 'e.g. Main warehouse'),
-      text('type', 'Location type', 'Warehouse, office, etc.'),
-      text('branch', 'Branch', 'Enter branch'),
-      text('address', 'Address', 'Enter address'),
+      choice('type', 'Location type', 'Select location type', ['BRANCH', 'BUILDING', 'FLOOR', 'ROOM', 'WAREHOUSE', 'OTHER']),
+      text('branch', 'Parent location name', 'Optional parent location', false),
+      text('address', 'Address', 'Optional address', false),
     ],
   },
 };

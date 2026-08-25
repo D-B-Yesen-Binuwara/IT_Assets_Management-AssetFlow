@@ -1,83 +1,117 @@
 import { Button } from '../components/common/Button';
 import { Card, CardHeader } from '../components/common/Card';
-import { ChartPlaceholder } from '../components/common/ChartPlaceholder';
 import { PageHeader } from '../components/common/PageHeader';
-import { EmptyState } from '../components/common/State';
 import { StatCard } from '../components/common/StatCard';
+import { Table } from '../components/common/Table';
 import { useResource } from '../hooks/useResource';
 import { dashboardService } from '../services/resources';
+import { collectionItems } from '../utils/collections';
 
 const stats = [
-  ['Total assets', 'assets', 'indigo', 'Across all categories'],
-  ['Available', 'assets', 'green', 'Ready to deploy'],
-  ['Assigned', 'transfer', 'blue', 'In active use'],
-  ['Under maintenance', 'wrench', 'amber', 'Being serviced'],
-  ['Retired / disposed', 'assets', 'slate', 'End of lifecycle'],
-  ['Warranty expiring', 'shield', 'rose', 'Within 60 days'],
-  ['Total asset value', 'chart', 'violet', 'Current valuation'],
-  ['Departments', 'building', 'cyan', 'Organization structure'],
+  ['Total assets', 'totalAssets', 'assets', 'indigo', 'Across all categories'],
+  ['Available', 'availableAssets', 'assets', 'green', 'Ready to deploy'],
+  ['Assigned', 'assignedAssets', 'transfer', 'blue', 'In active use'],
+  ['Under maintenance', 'assetsUnderMaintenance', 'wrench', 'amber', 'Being serviced'],
+  ['Retired / disposed', 'retiredOrDisposedAssets', 'assets', 'slate', 'End of lifecycle'],
+  ['Warranty expiring', 'warrantiesExpiring', 'shield', 'rose', 'Within 60 days'],
+  ['Total asset value', 'totalAssetValue', 'chart', 'violet', 'Current book value'],
+  ['Departments', 'departments', 'building', 'cyan', 'Organization structure'],
+];
+
+const formatNumber = (value) => (value === undefined || value === null ? '\u2014' : Number(value).toLocaleString());
+const formatMoney = (value) => (value === undefined || value === null ? '\u2014' : Number(value).toLocaleString(undefined, { style: 'currency', currency: 'USD' }));
+
+function DistributionCard({ title, values = {} }) {
+  const entries = Object.entries(values);
+  const max = Math.max(...entries.map(([, value]) => Number(value)), 1);
+
+  return (
+    <Card>
+      <CardHeader title={title} description="Live distribution returned by the dashboard API." />
+      {entries.length === 0 ? (
+        <div className="summary-empty"><p>No data returned.</p></div>
+      ) : (
+        <div className="metric-list">
+          {entries.map(([label, value]) => (
+            <div className="metric-row" key={label}>
+              <span>{label.replace(/_/g, ' ')}</span>
+              <div className="metric-bar"><i style={{ width: `${(Number(value) / max) * 100}%` }} /></div>
+              <strong>{formatNumber(value)}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+const activityColumns = [
+  { key: 'eventType', label: 'Event', value: (row) => row.eventType || '\u2014' },
+  { key: 'eventAt', label: 'Time', value: (row) => row.eventAt ? new Date(row.eventAt).toLocaleString() : '\u2014' },
+  { key: 'fromStatus', label: 'From', value: (row) => row.fromStatus || '\u2014' },
+  { key: 'toStatus', label: 'To', value: (row) => row.toStatus || '\u2014' },
+  { key: 'notes', label: 'Notes', value: (row) => row.notes || '\u2014' },
 ];
 
 export function DashboardPage() {
-  const resource = useResource(() => dashboardService.summary(), 'summary');
+  const summaryResource = useResource(() => dashboardService.summary(), 'summary');
+  const activityResource = useResource(() => dashboardService.activity(), 'activity');
+  const summary = summaryResource.data || {};
 
-  // The dashboard exposes metric labels while values remain owned by the backend.
   return (
     <div>
       <PageHeader
         title="Dashboard"
         description="A live operational view of your industrial asset estate."
         actions={
-          <>
-            <Button variant="outline" icon="refresh" onClick={resource.reload}>
-              Refresh
-            </Button>
-            <Button icon="download">Export report</Button>
-          </>
+          <Button variant="outline" icon="refresh" onClick={() => {
+            summaryResource.reload();
+            activityResource.reload();
+          }}>
+            Refresh
+          </Button>
         }
       />
 
       <div className="stats-grid">
-        {stats.map(([label, icon, tone, helper]) => (
-          <StatCard key={label} label={label} icon={icon} tone={tone} helper={helper} />
+        {stats.map(([label, key, icon, tone, helper]) => (
+          <StatCard
+            key={label}
+            label={label}
+            icon={icon}
+            tone={tone}
+            helper={helper}
+            value={key === 'totalAssetValue' ? formatMoney(summary[key]) : formatNumber(summary[key])}
+          />
         ))}
       </div>
 
       <div className="dashboard-grid">
-        <ChartPlaceholder
-          title="Monthly procurement trend"
-          description="Assets procured and spend over the last 12 months."
-          className="wide"
-        />
-        <ChartPlaceholder title="Asset status" description="Distribution by lifecycle state." />
-        <ChartPlaceholder title="Assets by category" description="Inventory breakdown." />
-        <ChartPlaceholder title="Assets by department" description="Allocation across teams." />
-        <ChartPlaceholder title="Maintenance cost trend" description="Monthly repair spend." />
-        <ChartPlaceholder
-          title="Warranty expiry timeline"
-          description="Assets grouped by remaining warranty period."
-        />
-      </div>
-
-      <div className="dashboard-lower">
+        <DistributionCard title="Assets by status" values={summary.assetsByStatus} />
+        <DistributionCard title="Assets by category" values={summary.assetsByCategory} />
+        <DistributionCard title="Assets by department" values={summary.assetsByDepartment} />
         <Card>
-          <CardHeader title="Recent activity" description="Latest lifecycle events from the backend." />
-          <EmptyState
-            icon="refresh"
-            title={resource.status === 'error' ? 'Activity is unavailable' : 'No activity yet'}
-            description="Activity will appear when the dashboard API is connected."
-          />
-        </Card>
-
-        <Card>
-          <CardHeader title="Open maintenance" description="Upcoming and overdue work." />
-          <EmptyState
-            icon="wrench"
-            title="No maintenance data"
-            description="Work orders will appear here when available."
-          />
+          <CardHeader title="Operational alerts" description="Live counts from the reporting API." />
+          <div className="metric-list">
+            <div className="metric-row"><span>Open maintenance tickets</span><strong>{formatNumber(summary.openMaintenanceTickets)}</strong></div>
+            <div className="metric-row"><span>Unread notifications</span><strong>{formatNumber(summary.unreadNotifications)}</strong></div>
+          </div>
         </Card>
       </div>
+
+      <Card className="table-wrap">
+        <CardHeader title="Recent activity" description="Latest lifecycle events returned by the backend." />
+        <Table
+          columns={activityColumns}
+          rows={collectionItems(activityResource.data)}
+          status={activityResource.status}
+          error={activityResource.error}
+          onRetry={activityResource.reload}
+          emptyTitle="No lifecycle activity"
+          emptyDescription="Lifecycle events will appear here as assets change."
+          searchPlaceholder="Search activity..."
+        />
+      </Card>
     </div>
   );
 }

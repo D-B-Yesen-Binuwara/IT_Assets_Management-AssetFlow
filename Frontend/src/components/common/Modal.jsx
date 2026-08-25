@@ -42,8 +42,17 @@ export function BackendForm({ fields, onClose, onSubmit, submitting = false }) {
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    // The form passes entered values to the service layer without creating fake results.
-    onSubmit(Object.fromEntries(new FormData(event.currentTarget)));
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    const payload = Object.fromEntries(
+      fields.map((field) => {
+        const rawValue = values[field.name];
+        if (field.parse) return [field.name, field.parse(rawValue)];
+        if (field.type === 'number') return [field.name, rawValue === '' ? null : Number(rawValue)];
+        return [field.name, rawValue === '' ? null : rawValue];
+      }),
+    );
+
+    onSubmit(payload);
   };
 
   return (
@@ -52,12 +61,30 @@ export function BackendForm({ fields, onClose, onSubmit, submitting = false }) {
         {fields.map((field) => (
           <label key={field.name}>
             {field.label}
-            <input
-              name={field.name}
-              type={field.type || 'text'}
-              placeholder={field.placeholder || 'Enter value'}
-              required={field.required !== false}
-            />
+            {field.type === 'select' ? (
+              <select name={field.name} defaultValue={field.defaultValue || ''} required={field.required !== false}>
+                <option value="">{field.placeholder || 'Select an option'}</option>
+                {field.options?.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            ) : field.type === 'textarea' ? (
+              <textarea
+                name={field.name}
+                placeholder={field.placeholder || 'Enter value'}
+                required={field.required !== false}
+                rows={field.rows || 3}
+              />
+            ) : (
+              <input
+                name={field.name}
+                type={field.type || 'text'}
+                placeholder={field.placeholder || 'Enter value'}
+                required={field.required !== false}
+                min={field.min}
+                step={field.step}
+              />
+            )}
           </label>
         ))}
       </div>

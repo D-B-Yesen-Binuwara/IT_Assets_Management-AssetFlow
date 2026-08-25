@@ -4,8 +4,10 @@ import { Card, CardHeader } from '../common/Card';
 import { Icon } from '../common/Icon';
 import { PageHeader } from '../common/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '../common/State';
+import { Table } from '../common/Table';
 import { AssetTransferHistory } from './AssetTransferHistory';
 import { useResource } from '../../hooks/useResource';
+import { collectionItems } from '../../utils/collections';
 
 const visibleDetailFields = (item) =>
   Object.entries(item)
@@ -22,6 +24,10 @@ const formatLabel = (key) =>
 export function DetailsPage({ config }) {
   const { id } = useParams();
   const resource = useResource(() => config.service.get(id), id);
+  const activity = useResource(
+    () => config.service.lifecycle ? config.service.lifecycle(id) : Promise.resolve([]),
+    id,
+  );
 
   if (resource.status === 'loading') {
     return <LoadingState label={`Loading ${config.singular}`} />;
@@ -89,10 +95,20 @@ export function DetailsPage({ config }) {
 
         <Card>
           <CardHeader title="Activity" description="Lifecycle events from the backend." />
-          <div className="activity-empty">
-            <Icon name="refresh" size={20} />
-            <p>Activity history will appear here when this record is available.</p>
-          </div>
+          <Table
+            columns={[
+              { key: 'eventType', label: 'Event', value: (row) => row.eventType || '\u2014' },
+              { key: 'eventAt', label: 'Time', value: (row) => row.eventAt ? new Date(row.eventAt).toLocaleString() : '\u2014' },
+              { key: 'fromStatus', label: 'From', value: (row) => row.fromStatus || '\u2014' },
+              { key: 'toStatus', label: 'To', value: (row) => row.toStatus || '\u2014' },
+            ]}
+            rows={collectionItems(activity.data)}
+            status={activity.status}
+            error={activity.error}
+            onRetry={activity.reload}
+            emptyTitle="No lifecycle events"
+            emptyDescription="Lifecycle events will appear when this asset changes."
+          />
         </Card>
       </div>
 

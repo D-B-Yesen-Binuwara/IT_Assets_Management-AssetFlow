@@ -13,13 +13,19 @@ import java.time.Instant;
 public class AuthCookieService {
     private final String cookieName;
     private final boolean secure;
+    private final String sameSite;
+    private final String domain;
 
     public AuthCookieService(
             @Value("${app.security.cookie-name:ASSETFLOW_AUTH}") String cookieName,
-            @Value("${app.security.cookie-secure:false}") boolean secure
+            @Value("${app.security.cookie-secure:false}") boolean secure,
+            @Value("${app.security.cookie-same-site:Lax}") String sameSite,
+            @Value("${app.security.cookie-domain:}") String domain
     ) {
         this.cookieName = cookieName;
         this.secure = secure;
+        this.sameSite = sameSite;
+        this.domain = domain;
     }
 
     public String getCookieName() {
@@ -32,24 +38,26 @@ public class AuthCookieService {
             Instant expiresAt
     ) {
         long seconds = Math.max(1, Duration.between(Instant.now(), expiresAt).toSeconds());
-        ResponseCookie cookie = ResponseCookie.from(cookieName, token)
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(cookieName, token)
                 .httpOnly(true)
                 .secure(secure)
-                .sameSite("Lax")
+                .sameSite(sameSite)
                 .path("/")
-                .maxAge(Duration.ofSeconds(seconds))
-                .build();
+                .maxAge(Duration.ofSeconds(seconds));
+        if (domain != null && !domain.isBlank()) builder.domain(domain.trim());
+        ResponseCookie cookie = builder.build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     public void clearAuthenticationCookie(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from(cookieName, "")
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(cookieName, "")
                 .httpOnly(true)
                 .secure(secure)
-                .sameSite("Lax")
+                .sameSite(sameSite)
                 .path("/")
-                .maxAge(Duration.ZERO)
-                .build();
+                .maxAge(Duration.ZERO);
+        if (domain != null && !domain.isBlank()) builder.domain(domain.trim());
+        ResponseCookie cookie = builder.build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }

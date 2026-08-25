@@ -3,9 +3,11 @@ import { Button } from '../components/common/Button';
 import { Card, CardHeader } from '../components/common/Card';
 import { Icon } from '../components/common/Icon';
 import { PageHeader } from '../components/common/PageHeader';
-import { EmptyState, ErrorState, LoadingState } from '../components/common/State';
+import { ErrorState, LoadingState } from '../components/common/State';
+import { Table } from '../components/common/Table';
 import { useAction, useResource } from '../hooks/useResource';
-import { settingsService } from '../services/resources';
+import { categoryService, locationService, notificationService, settingsService } from '../services/resources';
+import { collectionItems } from '../utils/collections';
 
 const tabs = [
   { id: 'organization', label: 'Organization', icon: 'building' },
@@ -21,6 +23,9 @@ const emptyForm = {
   industry: '',
   primaryContact: '',
   currency: '',
+  timezone: 'UTC',
+  branding: '{}',
+  notificationSettings: '{}',
 };
 
 export function SettingsPage() {
@@ -28,6 +33,10 @@ export function SettingsPage() {
   const [theme, setTheme] = useState('light');
   const [formEdits, setFormEdits] = useState({});
   const resource = useResource(() => settingsService.get(), 'settings');
+  const categories = useResource(() => categoryService.list(), 'categories');
+  const locations = useResource(() => locationService.list(), 'locations');
+  const preferences = useResource(() => notificationService.preferences(), 'preferences');
+  const templates = useResource(() => settingsService.templates(), 'templates');
   const action = useAction(settingsService.update);
 
   // The form combines backend settings with unsaved browser-session edits.
@@ -45,7 +54,17 @@ export function SettingsPage() {
     event.preventDefault();
 
     try {
-      await action.execute(form);
+      await action.execute({
+        organizationName: form.organizationName,
+        industry: form.industry,
+        primaryContact: form.primaryContact,
+        currency: form.currency,
+        timezone: form.timezone,
+        branding: form.branding,
+        notificationSettings: form.notificationSettings,
+      });
+      setFormEdits({});
+      resource.reload();
     } catch {
       // The action state renders the backend error below the form.
     }
@@ -163,7 +182,18 @@ export function SettingsPage() {
           {active === 'categories' && (
             <Card>
               <CardHeader title="Asset categories" description="Categories are managed by the backend." />
-              <EmptyState icon="assets" title="No categories loaded" />
+              <Table
+                columns={[
+                  { key: 'name', label: 'Category', value: (row) => row.name },
+                  { key: 'active', label: 'Active', value: (row) => row.active ? 'Yes' : 'No' },
+                  { key: 'assetCount', label: 'Assets', value: (row) => row.assetCount ?? 0 },
+                ]}
+                rows={collectionItems(categories.data)}
+                status={categories.status}
+                error={categories.error}
+                onRetry={categories.reload}
+                emptyTitle="No categories loaded"
+              />
             </Card>
           )}
 
@@ -173,7 +203,18 @@ export function SettingsPage() {
                 title="Inventory locations"
                 description="Locations are managed by the backend."
               />
-              <EmptyState icon="pin" title="No locations loaded" />
+              <Table
+                columns={[
+                  { key: 'name', label: 'Location', value: (row) => row.name },
+                  { key: 'type', label: 'Type', value: (row) => row.type },
+                  { key: 'assetCount', label: 'Assets', value: (row) => row.assetCount ?? 0 },
+                ]}
+                rows={collectionItems(locations.data)}
+                status={locations.status}
+                error={locations.error}
+                onRetry={locations.reload}
+                emptyTitle="No locations loaded"
+              />
             </Card>
           )}
 
@@ -183,7 +224,18 @@ export function SettingsPage() {
                 title="Notification preferences"
                 description="Preference controls will be populated from the settings API."
               />
-              <EmptyState icon="bell" title="No preferences loaded" />
+              <Table
+                columns={[
+                  { key: 'notificationType', label: 'Notification', value: (row) => row.notificationType },
+                  { key: 'inAppEnabled', label: 'In-app', value: (row) => row.inAppEnabled ? 'Enabled' : 'Disabled' },
+                  { key: 'emailEnabled', label: 'Email', value: (row) => row.emailEnabled ? 'Enabled' : 'Disabled' },
+                ]}
+                rows={collectionItems(preferences.data)}
+                status={preferences.status}
+                error={preferences.error}
+                onRetry={preferences.reload}
+                emptyTitle="No preferences configured"
+              />
             </Card>
           )}
 
@@ -193,7 +245,18 @@ export function SettingsPage() {
                 title="Email templates"
                 description="Template placeholders and content are managed by the backend."
               />
-              <EmptyState icon="mail" title="No templates loaded" />
+              <Table
+                columns={[
+                  { key: 'templateKey', label: 'Template', value: (row) => row.templateKey },
+                  { key: 'subjectTemplate', label: 'Subject', value: (row) => row.subjectTemplate },
+                  { key: 'active', label: 'Active', value: (row) => row.active ? 'Yes' : 'No' },
+                ]}
+                rows={collectionItems(templates.data)}
+                status={templates.status}
+                error={templates.error}
+                onRetry={templates.reload}
+                emptyTitle="No templates loaded"
+              />
             </Card>
           )}
         </section>
