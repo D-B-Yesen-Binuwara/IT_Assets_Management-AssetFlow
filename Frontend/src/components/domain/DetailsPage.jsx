@@ -55,7 +55,7 @@ export function DetailsPage({ config }) {
         <EmptyState
           icon={config.icon}
           title={`${config.singular} not found`}
-          description="No backend record was returned for this identifier."
+          description="No record was returned for this identifier."
         />
       </>
     );
@@ -82,7 +82,7 @@ export function DetailsPage({ config }) {
 
       <div className="detail-grid">
         <Card>
-          <CardHeader title="Overview" description="Fields supplied by the backend record." />
+          <CardHeader title="Overview" description="Current record details." />
           <div className="detail-fields">
             {visibleDetailFields(item).map(([key, value]) => (
               <div key={key}>
@@ -94,7 +94,7 @@ export function DetailsPage({ config }) {
         </Card>
 
         <Card>
-          <CardHeader title="Activity" description="Lifecycle events from the backend." />
+          <CardHeader title="Activity" description="Lifecycle events for this record." />
           <Table
             columns={[
               { key: 'eventType', label: 'Event', value: (row) => row.eventType || '\u2014' },

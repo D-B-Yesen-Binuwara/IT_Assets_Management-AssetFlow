@@ -27,7 +27,7 @@ function DistributionCard({ title, values = {} }) {
 
   return (
     <Card>
-      <CardHeader title={title} description="Live distribution returned by the dashboard API." />
+      <CardHeader title={title} description="Current distribution across your assets." />
       {entries.length === 0 ? (
         <div className="summary-empty"><p>No data returned.</p></div>
       ) : (
@@ -91,7 +91,7 @@ export function DashboardPage() {
         <DistributionCard title="Assets by category" values={summary.assetsByCategory} />
         <DistributionCard title="Assets by department" values={summary.assetsByDepartment} />
         <Card>
-          <CardHeader title="Operational alerts" description="Live counts from the reporting API." />
+          <CardHeader title="Operational alerts" description="Current operational counts." />
           <div className="metric-list">
             <div className="metric-row"><span>Open maintenance tickets</span><strong>{formatNumber(summary.openMaintenanceTickets)}</strong></div>
             <div className="metric-row"><span>Unread notifications</span><strong>{formatNumber(summary.unreadNotifications)}</strong></div>
@@ -100,7 +100,7 @@ export function DashboardPage() {
       </div>
 
       <Card className="table-wrap">
-        <CardHeader title="Recent activity" description="Latest lifecycle events returned by the backend." />
+        <CardHeader title="Recent activity" description="Latest lifecycle events." />
         <Table
           columns={activityColumns}
           rows={collectionItems(activityResource.data)}

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Button } from './Button';
 import { Icon } from './Icon';
 
-export function Modal({ open, title, description, children, onClose }) {
+export function Modal({ open, title, description, children, onClose, className = '' }) {
   useEffect(() => {
     if (!open) return undefined;
 
@@ -20,7 +20,7 @@ export function Modal({ open, title, description, children, onClose }) {
       className="modal-backdrop"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
-      <div className="modal" role="dialog" aria-modal="true">
+      <div className={`modal ${className}`} role="dialog" aria-modal="true">
         <div className="modal-header">
           <div>
             <h2>{title}</h2>

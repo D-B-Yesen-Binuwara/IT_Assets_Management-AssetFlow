@@ -109,7 +109,7 @@ export function SettingsPage() {
               <Card>
                 <CardHeader
                   title="Organization details"
-                  description="These fields are loaded from and saved to the settings API."
+                  description="Organization and workspace configuration."
                 />
 
                 <div className="form-fields two">
@@ -181,7 +181,7 @@ export function SettingsPage() {
 
           {active === 'categories' && (
             <Card>
-              <CardHeader title="Asset categories" description="Categories are managed by the backend." />
+              <CardHeader title="Asset categories" description="Manage the categories used across assets." />
               <Table
                 columns={[
                   { key: 'name', label: 'Category', value: (row) => row.name },
@@ -201,7 +201,7 @@ export function SettingsPage() {
             <Card>
               <CardHeader
                 title="Inventory locations"
-                description="Locations are managed by the backend."
+                description="Manage the locations used across your inventory."
               />
               <Table
                 columns={[
@@ -222,7 +222,7 @@ export function SettingsPage() {
             <Card>
               <CardHeader
                 title="Notification preferences"
-                description="Preference controls will be populated from the settings API."
+                description="Choose which events should generate notifications."
               />
               <Table
                 columns={[
@@ -243,7 +243,7 @@ export function SettingsPage() {
             <Card>
               <CardHeader
                 title="Email templates"
-                description="Template placeholders and content are managed by the backend."
+                description="Manage notification templates and their content."
               />
               <Table
                 columns={[

@@ -32,7 +32,7 @@ function ReportData({ data }) {
   return (
     <>
       <Card>
-        <CardHeader title="Metrics" description="Summary values returned by the reporting API." />
+        <CardHeader title="Metrics" description="Summary values for the selected report." />
         <div className="metric-list">
           {metrics.length === 0 ? (
             <div className="summary-empty"><p>No metrics returned.</p></div>
@@ -115,7 +115,7 @@ export function ReportsPage() {
             <div>
               <p className="eyebrow">Selected report</p>
               <h2>{activeReport?.label}</h2>
-              <p>Data and comparisons are populated by the reporting API.</p>
+              <p>Data and comparisons for the selected report.</p>
             </div>
 
             <div className="date-range">

@@ -202,11 +202,11 @@ export function AssignmentForm({
           <div className="form-fields two asset-details" aria-live="polite">
             <label>
               Assets Name
-              <input value={selectedAsset?.name || ''} placeholder="Filled from the selected asset" readOnly />
+              <input value={selectedAsset?.name || ''} readOnly />
             </label>
             <label>
               Brand
-              <input value={assetBrand(selectedAsset)} placeholder="Filled from the selected asset" readOnly />
+              <input value={assetBrand(selectedAsset)} readOnly />
             </label>
           </div>
 
@@ -237,7 +237,7 @@ export function AssignmentForm({
               />
             </label>
             <label>
-              Closing date <span className="optional-label">(optional)</span>
+              <span className="field-label">Closing date <span className="optional-label">(optional)</span></span>
               <input
                 type="date"
                 value={form.expectedReturnDate}

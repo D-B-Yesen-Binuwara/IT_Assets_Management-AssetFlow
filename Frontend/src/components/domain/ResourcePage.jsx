@@ -25,7 +25,7 @@ export function ResourcePage({ config }) {
       setModalOpen(false);
       resource.reload();
     } catch {
-      // The form state surfaces backend errors inside the modal.
+      // The form state surfaces request errors inside the modal.
     }
   };
 
@@ -61,14 +61,12 @@ export function ResourcePage({ config }) {
                 <h2>{config.chart.title}</h2>
                 <p>{config.chart.description}</p>
               </div>
-              <span className="data-source">
-                <Icon name="info" size={14} /> API data
-              </span>
+              <span className="data-source">Current data</span>
             </div>
 
             <div className="chart-empty mini">
-              <p>No backend data available</p>
-              <small>Trend data will render here when connected.</small>
+              <p>No trend data available</p>
+              <small>Trend data will appear when records are available.</small>
             </div>
           </Card>
         </div>
@@ -82,7 +80,7 @@ export function ResourcePage({ config }) {
           error={resource.error}
           onRetry={resource.reload}
           emptyTitle={`No ${config.title.toLowerCase()} yet`}
-          emptyDescription="This workspace is ready for live API data. No records are being simulated."
+          emptyDescription="No records have been added yet."
           searchPlaceholder={`Search ${config.title.toLowerCase()}...`}
         />
       </Card>
@@ -91,7 +89,7 @@ export function ResourcePage({ config }) {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={config.actionLabel || `Add ${config.singular}`}
-        description="This request will be validated and sent to the backend API."
+        description="Complete the fields below to submit this request."
       >
         <BackendForm
           fields={config.fields}

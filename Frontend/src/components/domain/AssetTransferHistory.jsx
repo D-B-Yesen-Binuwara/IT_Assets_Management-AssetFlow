@@ -42,7 +42,7 @@ export function AssetTransferHistory({ assetId }) {
         error={resource.error}
         onRetry={resource.reload}
         emptyTitle="No transfers recorded"
-        emptyDescription="Asset transfers will appear here after the transfer API is connected."
+        emptyDescription="Asset transfers will appear here after the first transfer."
         searchPlaceholder="Search transfer history..."
       />
     </Card>

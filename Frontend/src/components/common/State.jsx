@@ -4,7 +4,7 @@ import { Icon } from './Icon';
 export function EmptyState({
   icon = 'assets',
   title = 'No records yet',
-  description = 'Records will appear here once the backend is connected.',
+  description = 'Records will appear here when available.',
   action,
 }) {
   return (
