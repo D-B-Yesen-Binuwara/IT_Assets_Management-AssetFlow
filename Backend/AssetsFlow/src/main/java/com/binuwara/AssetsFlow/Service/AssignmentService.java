@@ -83,6 +83,7 @@ public class AssignmentService {
         assignment.setExpectedReturnDate(request.expectedReturnDate());
         assignment.setStatus(status);
         assignment.setHandoverNotes(DomainSupport.optionalText(request.handoverNotes()));
+        if (status != AssignmentStatus.ACTIVE) assignment.setClosingReason(DomainSupport.optionalText(request.closingReason()));
         if (status != AssignmentStatus.ACTIVE) {
             Instant returnedAt = Instant.now();
             if (returnedAt.isBefore(assignedAt)) throw new com.binuwara.AssetsFlow.Exception.ApiException(HttpStatus.BAD_REQUEST, "A closed assignment cannot have a future assignment date.");
@@ -100,6 +101,7 @@ public class AssignmentService {
         if (request.expectedReturnDate() != null) assignment.setExpectedReturnDate(request.expectedReturnDate());
         if (request.handoverNotes() != null) assignment.setHandoverNotes(DomainSupport.optionalText(request.handoverNotes()));
         if (request.status() != null && request.status() != assignment.getStatus()) closeOrReopen(assignment, request.status());
+        if (request.closingReason() != null) assignment.setClosingReason(DomainSupport.optionalText(request.closingReason()));
         Assignment saved = assignmentRepository.save(assignment);
         syncAssetStatus(saved.getAsset());
         DomainSupport.audit(auditLogRepository, appUserRepository, actor, "ASSIGNMENT", saved.getId(), "UPDATED", null);
@@ -123,6 +125,7 @@ public class AssignmentService {
             if (assignmentRepository.existsByAsset_IdAndStatus(assignment.getAsset().getId(), AssignmentStatus.ACTIVE)) throw DomainSupport.conflict("The asset already has an active assignment.");
             if (assignment.getAsset().getStatus() != AssetStatus.AVAILABLE && assignment.getAsset().getStatus() != AssetStatus.ASSIGNED) throw DomainSupport.conflict("The asset is not available for assignment.");
             assignment.setReturnedAt(null);
+            assignment.setClosingReason(null);
         } else if (assignment.getStatus() == AssignmentStatus.ACTIVE) {
             assignment.setReturnedAt(Instant.now());
         }
@@ -152,6 +155,6 @@ public class AssignmentService {
         LocalDate closingDate = assignment.getReturnedAt() == null
                 ? assignment.getExpectedReturnDate()
                 : assignment.getReturnedAt().atZone(ZoneOffset.UTC).toLocalDate();
-        return new AssignmentResponse(assignment.getId(), asset.getId(), asset.getAssetTag(), asset.getName(), asset.getCategory() == null ? null : asset.getCategory().getId(), asset.getCategory() == null ? null : asset.getCategory().getName(), employee.getId(), DomainSupport.fullName(employee.getFirstName(), employee.getLastName()), employee.getEmployeeNumber(), asset.getLocation() == null ? null : asset.getLocation().getId(), asset.getLocation() == null ? null : asset.getLocation().getName(), assignment.getAssignedAt(), assignment.getAssignedAt() == null ? null : assignment.getAssignedAt().atZone(ZoneOffset.UTC).toLocalDate(), assignment.getExpectedReturnDate(), assignment.getReturnedAt(), closingDate, assignment.getStatus(), assignment.getHandoverNotes(), assignment.getCreatedAt());
+        return new AssignmentResponse(assignment.getId(), asset.getId(), asset.getAssetTag(), asset.getName(), asset.getCategory() == null ? null : asset.getCategory().getId(), asset.getCategory() == null ? null : asset.getCategory().getName(), employee.getId(), DomainSupport.fullName(employee.getFirstName(), employee.getLastName()), employee.getEmployeeNumber(), asset.getLocation() == null ? null : asset.getLocation().getId(), asset.getLocation() == null ? null : asset.getLocation().getName(), assignment.getAssignedAt(), assignment.getAssignedAt() == null ? null : assignment.getAssignedAt().atZone(ZoneOffset.UTC).toLocalDate(), assignment.getExpectedReturnDate(), assignment.getReturnedAt(), closingDate, assignment.getStatus(), assignment.getClosingReason(), assignment.getHandoverNotes(), assignment.getCreatedAt());
     }
 }

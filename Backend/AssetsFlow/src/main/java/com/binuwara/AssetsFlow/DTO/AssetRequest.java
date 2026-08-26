@@ -17,6 +17,7 @@ public record AssetRequest(
         UUID purchaseOrderItemId,
         LocalDate purchaseDate,
         BigDecimal purchaseCost,
+        Integer warrantyPeriodMonths,
         String currency,
         UUID locationId,
         String location,

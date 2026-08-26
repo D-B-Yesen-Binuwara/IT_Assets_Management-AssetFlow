@@ -28,6 +28,7 @@ public record AssetResponse(
         AssetCondition assetCondition,
         LocalDate purchaseDate,
         BigDecimal purchaseCost,
+        Integer warrantyPeriodMonths,
         String currency,
         LocalDate retirementDate,
         String disposalNotes,
