@@ -24,7 +24,7 @@ export function AssignmentCloseModal({ assignment, submitting = false, actionErr
         </div>
         <div className="form-fields">
           <label>
-            Closing reason <span className="optional-label">(optional)</span>
+            <span className="field-label">Closing reason <span className="optional-label">(optional)</span></span>
             <textarea value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Add an early-return or closure reason" rows="3" disabled={submitting} />
           </label>
         </div>

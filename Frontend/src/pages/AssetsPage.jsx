@@ -6,6 +6,8 @@ import { IconActionButton } from '../components/common/IconActionButton';
 import { Modal } from '../components/common/Modal';
 import { PageHeader } from '../components/common/PageHeader';
 import { StatCard } from '../components/common/StatCard';
+import { StatusBadge } from '../components/common/StatusBadge';
+import { StatusPicker } from '../components/common/StatusPicker';
 import { Table } from '../components/common/Table';
 import { AssetDetailsModal } from '../components/domain/AssetDetailsModal';
 import { AssetForm } from '../components/domain/AssetForm';
@@ -16,6 +18,13 @@ import { collectionItems, recordId } from '../utils/collections';
 
 const config = resourceConfigs.assets;
 const idleLookup = { status: 'idle', categories: [], departments: [], vendors: [], locations: [], assets: [], error: null };
+const editableStatuses = [
+  { value: 'AVAILABLE', label: 'Available' },
+  { value: 'UNDER_MAINTENANCE', label: 'Maintenance' },
+  { value: 'IN_TRANSIT', label: 'In Transit' },
+  { value: 'DISPOSED', label: 'Disposed' },
+  { value: 'LOST', label: 'Lost' },
+];
 
 export function AssetsPage() {
   const resource = useResource(() => assetService.list(), 'assets');
@@ -25,6 +34,7 @@ export function AssetsPage() {
   const [detailsVendor, setDetailsVendor] = useState(null);
   const [deleteAsset, setDeleteAsset] = useState(null);
   const [mutation, setMutation] = useState({ status: 'idle', error: null });
+  const [statusAction, setStatusAction] = useState({ status: 'idle', error: null });
   const rows = collectionItems(resource.data);
   const stats = config.stats.map((stat) => ({
     ...stat,
@@ -50,10 +60,22 @@ export function AssetsPage() {
       ...column,
       render: (row) => (
         <span className="asset-tag-cell">
+          <IconActionButton icon="info" className="asset-info-action" label={`View details for ${row.assetTag || row.name || 'asset'}`} onClick={() => openDetails(row)} />
           <span>{row.assetTag || '—'}</span>
-          <IconActionButton icon="info" label={`View details for ${row.assetTag || row.name || 'asset'}`} onClick={() => openDetails(row)} />
         </span>
       ),
+    };
+  });
+
+  const tableColumns = columns.map((column) => {
+    if (column.key !== 'status') return column;
+    return {
+      ...column,
+      render: (row) => {
+        const value = String(row.status || '').toUpperCase();
+        if (!editableStatuses.some((status) => status.value === value)) return <StatusBadge status={row.status} />;
+        return <StatusPicker value={value} options={editableStatuses} label={`Change status for ${row.assetTag || row.name || 'asset'}`} disabled={statusAction.status === 'loading'} onChange={(status) => changeStatus(row, status)} />;
+      },
     };
   });
 
@@ -120,6 +142,17 @@ export function AssetsPage() {
     }
   };
 
+  const changeStatus = async (asset, status) => {
+    setStatusAction({ status: 'loading', error: null });
+    try {
+      await assetService.update(recordId(asset, 'id'), { status });
+      setStatusAction({ status: 'success', error: null });
+      resource.reload();
+    } catch (error) {
+      setStatusAction({ status: 'error', error });
+    }
+  };
+
   const removeAsset = async () => {
     if (!deleteAsset) return;
     setMutation({ status: 'loading', error: null });
@@ -146,7 +179,7 @@ export function AssetsPage() {
 
       <Card className="table-wrap">
         <Table
-          columns={columns}
+          columns={tableColumns}
           rows={rows}
           status={resource.status}
           error={resource.error}
@@ -162,6 +195,7 @@ export function AssetsPage() {
             </div>
           )}
         />
+        {statusAction.status === 'error' && <div className="inline-error table-inline-error"><Icon name="warning" size={16} />{statusAction.error?.message}</div>}
       </Card>
 
       <Modal open={formState.open} onClose={closeForm} className="asset-modal" title={formState.asset ? 'Edit asset' : 'Add asset'} description={formState.asset ? 'Update the asset record, including its current status.' : 'Use existing catalog values or add a new category, brand, or department.'}>

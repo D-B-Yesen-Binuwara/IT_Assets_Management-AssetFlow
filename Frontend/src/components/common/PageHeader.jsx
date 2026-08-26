@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 
-export function PageHeader({ title, description, breadcrumbs = [], actions }) {
+export function PageHeader({ title, description, breadcrumbs = [], actions, className = '' }) {
   return (
-    <div className="page-header">
+    <div className={`page-header ${className}`}>
       <div>
         <div className="breadcrumbs">
           <Link to="/">AssetFlow</Link>

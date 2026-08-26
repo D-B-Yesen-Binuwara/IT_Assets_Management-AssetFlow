@@ -53,7 +53,7 @@ export const resourceConfigs = {
       { label: 'Total assets', icon: 'assets', tone: 'indigo', getValue: (rows) => rows.length },
       { label: 'Available', icon: 'assets', tone: 'green', getValue: (rows) => rows.filter((row) => row.status === 'AVAILABLE').length },
       { label: 'Assigned', icon: 'transfer', tone: 'blue', getValue: (rows) => rows.filter((row) => row.status === 'ASSIGNED').length },
-      { label: 'Under maintenance', icon: 'wrench', tone: 'amber', getValue: (rows) => rows.filter((row) => row.status === 'UNDER_MAINTENANCE').length },
+      { label: 'Maintenance', icon: 'wrench', tone: 'amber', getValue: (rows) => rows.filter((row) => row.status === 'UNDER_MAINTENANCE').length },
     ],
     columns: [
       value('assetTag', 'Asset tag'),
@@ -90,6 +90,7 @@ export const resourceConfigs = {
     columns: [
       value('employeeNumber', 'Employee ID'),
       value('name', 'Name'),
+      value('branch', 'Branch'),
       value('department', 'Department'),
       value('email', 'Email'),
       value('status', 'Status', status()),
@@ -98,8 +99,6 @@ export const resourceConfigs = {
       text('employeeNumber', 'Employee ID', 'Enter employee ID'),
       text('name', 'Full name', 'Enter full name'),
       text('email', 'Work email', 'name@company.com'),
-      text('department', 'Department name or code', 'Optional department', false),
-      text('phone', 'Phone', 'Optional phone number', false),
     ],
   },
 
