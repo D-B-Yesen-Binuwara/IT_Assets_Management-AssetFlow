@@ -60,6 +60,10 @@ public class AssignmentService {
     @Transactional
     public AssignmentResponse create(AssignmentRequest request, AuthenticatedUser actor) {
         Asset asset = assetRepository.findById(DomainSupport.required(request.assetId(), "Asset")).orElseThrow(() -> DomainSupport.notFound("Asset"));
+        UUID categoryId = DomainSupport.required(request.categoryId(), "Category");
+        if (asset.getCategory() == null || !categoryId.equals(asset.getCategory().getId())) {
+            throw DomainSupport.conflict("The selected asset does not belong to the chosen category.");
+        }
         Employee employee = employeeRepository.findById(DomainSupport.required(request.employeeId(), "Employee")).orElseThrow(() -> DomainSupport.notFound("Employee"));
         if (employee.getStatus() != EmployeeStatus.ACTIVE) throw DomainSupport.conflict("Only active employees can receive assignments.");
         AssignmentStatus status = request.status() == null ? AssignmentStatus.ACTIVE : request.status();
@@ -145,6 +149,9 @@ public class AssignmentService {
     private AssignmentResponse response(Assignment assignment) {
         Asset asset = assignment.getAsset();
         Employee employee = assignment.getEmployee();
-        return new AssignmentResponse(assignment.getId(), asset.getId(), asset.getAssetTag(), asset.getName(), employee.getId(), DomainSupport.fullName(employee.getFirstName(), employee.getLastName()), employee.getEmployeeNumber(), asset.getLocation() == null ? null : asset.getLocation().getId(), asset.getLocation() == null ? null : asset.getLocation().getName(), assignment.getAssignedAt(), assignment.getAssignedAt() == null ? null : assignment.getAssignedAt().atZone(ZoneOffset.UTC).toLocalDate(), assignment.getExpectedReturnDate(), assignment.getReturnedAt(), assignment.getStatus(), assignment.getHandoverNotes(), assignment.getCreatedAt());
+        LocalDate closingDate = assignment.getReturnedAt() == null
+                ? assignment.getExpectedReturnDate()
+                : assignment.getReturnedAt().atZone(ZoneOffset.UTC).toLocalDate();
+        return new AssignmentResponse(assignment.getId(), asset.getId(), asset.getAssetTag(), asset.getName(), asset.getCategory() == null ? null : asset.getCategory().getId(), asset.getCategory() == null ? null : asset.getCategory().getName(), employee.getId(), DomainSupport.fullName(employee.getFirstName(), employee.getLastName()), employee.getEmployeeNumber(), asset.getLocation() == null ? null : asset.getLocation().getId(), asset.getLocation() == null ? null : asset.getLocation().getName(), assignment.getAssignedAt(), assignment.getAssignedAt() == null ? null : assignment.getAssignedAt().atZone(ZoneOffset.UTC).toLocalDate(), assignment.getExpectedReturnDate(), assignment.getReturnedAt(), closingDate, assignment.getStatus(), assignment.getHandoverNotes(), assignment.getCreatedAt());
     }
 }

@@ -11,6 +11,8 @@ public record AssignmentResponse(
         UUID assetId,
         String assetTag,
         String assetName,
+        UUID categoryId,
+        String category,
         UUID employeeId,
         String employeeName,
         String employeeNumber,
@@ -20,6 +22,7 @@ public record AssignmentResponse(
         LocalDate assignedDate,
         LocalDate expectedReturnDate,
         Instant returnedAt,
+        LocalDate closingDate,
         AssignmentStatus status,
         String handoverNotes,
         Instant createdAt

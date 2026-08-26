@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { Icon } from '../components/common/Icon';
-import { BackendForm, Modal } from '../components/common/Modal';
+import { Modal } from '../components/common/Modal';
 import { PageHeader } from '../components/common/PageHeader';
 import { StatCard } from '../components/common/StatCard';
 import { Table } from '../components/common/Table';
+import { AssignmentForm } from '../components/domain/AssignmentForm';
 import { AssetTransferModal } from '../components/domain/AssetTransferModal';
 import { useAction, useResource } from '../hooks/useResource';
 import { resourceConfigs } from '../constants/resourceConfigs';
-import { assetService, employeeService, locationService } from '../services/resources';
+import { assetService, categoryService, employeeService, locationService } from '../services/resources';
 import { collectionItems, recordId } from '../utils/collections';
 
 const config = resourceConfigs.assignments;
@@ -20,8 +21,45 @@ export function AssignmentsPage() {
   const transferAction = useAction(assetService.transfer);
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
   const [transferAssignment, setTransferAssignment] = useState(null);
+  const [assignmentLookup, setAssignmentLookup] = useState({
+    status: 'idle',
+    categories: [],
+    assets: [],
+    employees: [],
+    error: null,
+  });
   const [lookup, setLookup] = useState({ status: 'idle', employees: [], locations: [], error: null });
   const rows = collectionItems(resource.data);
+  const stats = config.stats.map((stat) => ({
+    ...stat,
+    value: resource.status === 'success' && stat.getValue ? stat.getValue(rows) : '\u2014',
+  }));
+
+  const openAssignment = async () => {
+    setAssignmentModalOpen(true);
+    setAssignmentLookup({ status: 'loading', categories: [], assets: [], employees: [], error: null });
+
+    try {
+      const [categoryData, assetData, employeeData] = await Promise.all([
+        categoryService.list(),
+        assetService.list(),
+        employeeService.list({ status: 'ACTIVE' }),
+      ]);
+      setAssignmentLookup({
+        status: 'success',
+        categories: collectionItems(categoryData),
+        assets: collectionItems(assetData),
+        employees: collectionItems(employeeData),
+        error: null,
+      });
+    } catch (error) {
+      setAssignmentLookup({ status: 'error', categories: [], assets: [], employees: [], error });
+    }
+  };
+
+  const closeAssignment = () => {
+    if (createAction.status !== 'loading') setAssignmentModalOpen(false);
+  };
 
   const submitAssignment = async (payload) => {
     try {
@@ -75,7 +113,7 @@ export function AssignmentsPage() {
         actions={
           <>
             <Button variant="outline" icon="download">Export</Button>
-            <Button icon="plus" onClick={() => setAssignmentModalOpen(true)}>
+            <Button icon="plus" onClick={openAssignment}>
               {config.actionLabel}
             </Button>
           </>
@@ -83,7 +121,7 @@ export function AssignmentsPage() {
       />
 
       <div className="stats-grid">
-        {config.stats.map((stat) => <StatCard key={stat.label} {...stat} />)}
+        {stats.map((stat) => <StatCard key={stat.label} {...stat} />)}
       </div>
 
       <Card className="table-wrap">
@@ -110,21 +148,32 @@ export function AssignmentsPage() {
 
       <Modal
         open={assignmentModalOpen}
-        onClose={() => setAssignmentModalOpen(false)}
+        onClose={closeAssignment}
         title={config.actionLabel}
-        description="Create an initial asset assignment through the backend API."
+        description="Choose a category, then select a verified available asset by asset tag or model number."
       >
-        <BackendForm
-          fields={config.fields}
-          onClose={() => setAssignmentModalOpen(false)}
-          onSubmit={submitAssignment}
-          submitting={createAction.status === 'loading'}
-        />
-        {createAction.status === 'error' && (
+        {assignmentLookup.status === 'loading' && (
+          <div className="assignment-form-loading">
+            <div className="spinner" aria-hidden="true" />
+            <p>Loading categories, available assets, and employees...</p>
+          </div>
+        )}
+        {assignmentLookup.status === 'error' && (
           <div className="inline-error">
             <Icon name="warning" size={16} />
-            {createAction.error?.message}
+            {assignmentLookup.error?.message}
           </div>
+        )}
+        {assignmentLookup.status === 'success' && (
+          <AssignmentForm
+            categories={assignmentLookup.categories}
+            assets={assignmentLookup.assets}
+            employees={assignmentLookup.employees}
+            submitting={createAction.status === 'loading'}
+            actionError={createAction.status === 'error' ? createAction.error : null}
+            onClose={closeAssignment}
+            onSubmit={submitAssignment}
+          />
         )}
       </Modal>
 

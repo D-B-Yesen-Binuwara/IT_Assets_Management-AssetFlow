@@ -37,6 +37,9 @@ const value = (key, label, render) => ({
 
 const status = (key = 'status') => (row) => createElement(StatusBadge, { status: row[key] });
 
+const assignmentStatus = (row) => String(row?.status || '').trim().toUpperCase();
+const assignmentCount = (status) => (rows) => rows.filter((row) => assignmentStatus(row) === status).length;
+
 // The configs describe UI structure only; record values still come from backend services.
 export const resourceConfigs = {
   assets: {
@@ -56,6 +59,8 @@ export const resourceConfigs = {
       value('assetTag', 'Asset tag'),
       value('name', 'Name'),
       value('category', 'Category'),
+      value('brand', 'Brand'),
+      value('modelNo', 'Model No'),
       value('status', 'Status', status()),
       value('assignedTo', 'Assigned to'),
     ],
@@ -64,8 +69,8 @@ export const resourceConfigs = {
       text('name', 'Asset name', 'e.g. Industrial laptop'),
       text('category', 'Category', 'e.g. Laptop'),
       text('serialNumber', 'Serial number', 'Enter serial number', false),
-      text('manufacturer', 'Manufacturer', 'Optional manufacturer', false),
-      text('model', 'Model', 'Optional model', false),
+      text('brand', 'Brand', 'Optional brand', false),
+      text('modelNo', 'Model No', 'Enter model number'),
       text('location', 'Location name or code', 'Optional location', false),
       text('department', 'Department name or code', 'Optional department', false),
     ],
@@ -106,23 +111,19 @@ export const resourceConfigs = {
     description: 'Assign, return, and transfer assets across the organization.',
     actionLabel: 'New assignment',
     stats: [
-      { label: 'Active assignments', icon: 'transfer', tone: 'blue', getValue: (rows) => rows.filter((row) => row.status === 'ACTIVE').length },
-      { label: 'Returned', icon: 'refresh', tone: 'slate', getValue: (rows) => rows.filter((row) => row.status === 'RETURNED').length },
-      { label: 'Transferred', icon: 'transfer', tone: 'violet', getValue: (rows) => rows.filter((row) => row.status === 'TRANSFERRED').length },
+      { label: 'Active assignments', icon: 'transfer', tone: 'blue', getValue: assignmentCount('ACTIVE') },
+      { label: 'Returned', icon: 'refresh', tone: 'slate', getValue: assignmentCount('RETURNED') },
+      { label: 'Transferred', icon: 'transfer', tone: 'violet', getValue: assignmentCount('TRANSFERRED') },
       { label: 'Total records', icon: 'assets', tone: 'indigo', getValue: (rows) => rows.length },
     ],
     columns: [
       value('assetTag', 'Asset tag'),
-      value('assetName', 'Asset'),
+      value('assetName', 'Assets Name'),
+      value('category', 'Category'),
       value('employeeName', 'Employee'),
       value('assignedDate', 'Assigned'),
+      value('closingDate', 'Closing date'),
       value('status', 'Status', status()),
-    ],
-    fields: [
-      text('assetId', 'Asset ID', 'Enter asset ID'),
-      text('employeeId', 'Employee ID', 'Enter employee ID'),
-      text('assignedDate', 'Assignment date', 'YYYY-MM-DD', false),
-      text('expectedReturnDate', 'Expected return date', 'YYYY-MM-DD', false),
     ],
   },
 
