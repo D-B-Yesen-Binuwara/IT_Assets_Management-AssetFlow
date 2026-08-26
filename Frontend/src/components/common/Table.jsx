@@ -9,9 +9,10 @@ export function Table({
   error,
   onRetry,
   emptyTitle = 'No records found',
-  emptyDescription = 'Records will appear here once the backend returns them.',
+  emptyDescription = 'No records have been added yet.',
   searchPlaceholder = 'Search records...',
   rowActions,
+  rowActionsLabel = 'Actions',
 }) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState({ key: null, direction: 'asc' });
@@ -20,7 +21,7 @@ export function Table({
     const source = Array.isArray(rows) ? rows : [];
     const normalizedQuery = query.toLowerCase();
 
-    // The table only searches and sorts rows that were returned by the backend.
+    // Search and sort the records currently available to the table.
     const searched = normalizedQuery
       ? source.filter((row) =>
           columns.some((column) =>
@@ -61,9 +62,7 @@ export function Table({
             placeholder={searchPlaceholder}
           />
         </div>
-        <span className="table-count">
-          {query ? `${filtered.length} matching` : 'Ready for backend data'}
-        </span>
+        {query && <span className="table-count">{filtered.length} matching</span>}
       </div>
 
       {filtered.length === 0 ? (
@@ -85,7 +84,7 @@ export function Table({
                     </button>
                   </th>
                 ))}
-                {rowActions && <th>Actions</th>}
+                {rowActions && <th>{rowActionsLabel}</th>}
               </tr>
             </thead>
             <tbody>

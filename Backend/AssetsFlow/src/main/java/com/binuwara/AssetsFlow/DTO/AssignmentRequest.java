@@ -14,6 +14,7 @@ public record AssignmentRequest(
         LocalDate assignedDate,
         LocalDate expectedReturnDate,
         AssignmentStatus status,
-        String handoverNotes
+        String handoverNotes,
+        String closingReason
 ) {
 }

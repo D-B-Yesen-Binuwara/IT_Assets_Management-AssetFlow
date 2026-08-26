@@ -72,7 +72,7 @@ export function NotificationsPage() {
           error={resource.error}
           onRetry={resource.reload}
           emptyTitle="You are all caught up"
-          emptyDescription="New alerts will appear here when the backend creates them."
+          emptyDescription="New alerts will appear here when events occur."
           rowActions={(row) => (
             <div className="table-action-group">
               {!row.read && (

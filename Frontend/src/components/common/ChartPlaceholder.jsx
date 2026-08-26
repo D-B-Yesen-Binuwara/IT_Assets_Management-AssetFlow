@@ -14,8 +14,8 @@ export function ChartPlaceholder({ title, description, className = '' }) {
         </div>
 
         <div>
-          <p>Awaiting backend data</p>
-          <small>Connect the reporting API to populate this visualization.</small>
+          <p>No trend data yet</p>
+          <small>Trend data will appear when records are available.</small>
         </div>
       </div>
     </Card>

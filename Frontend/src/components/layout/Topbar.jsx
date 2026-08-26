@@ -33,7 +33,7 @@ export function Topbar({ onMenuClick, theme, onToggleTheme }) {
   }, []);
 
   useEffect(() => {
-    // The shortcut opens the search surface before a backend search endpoint exists.
+    // The shortcut opens the global search surface.
     const handler = (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
@@ -81,7 +81,7 @@ export function Topbar({ onMenuClick, theme, onToggleTheme }) {
                 <Icon name={query ? 'info' : 'search'} size={18} />
                 <p>
                   {query
-                    ? 'Search results will appear when the backend search endpoint is connected.'
+                    ? 'No matching results yet.'
                     : 'Start typing to search assets and people.'}
                 </p>
               </div>

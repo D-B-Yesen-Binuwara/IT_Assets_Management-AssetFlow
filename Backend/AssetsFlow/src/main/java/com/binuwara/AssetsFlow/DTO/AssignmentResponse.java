@@ -24,6 +24,7 @@ public record AssignmentResponse(
         Instant returnedAt,
         LocalDate closingDate,
         AssignmentStatus status,
+        String closingReason,
         String handoverNotes,
         Instant createdAt
 ) {

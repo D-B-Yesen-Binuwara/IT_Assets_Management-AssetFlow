@@ -65,6 +65,9 @@ public class Asset extends TimestampedEntity {
     @Column(name = "purchase_cost", precision = 14, scale = 2)
     private BigDecimal purchaseCost;
 
+    @Column(name = "warranty_period_months")
+    private Integer warrantyPeriodMonths;
+
     @JdbcTypeCode(Types.CHAR)
     @Column(columnDefinition = "char(3)", nullable = false, length = 3)
     private String currency = "USD";

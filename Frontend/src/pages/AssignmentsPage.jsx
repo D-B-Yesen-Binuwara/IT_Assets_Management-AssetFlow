@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { Icon } from '../components/common/Icon';
+import { IconActionButton } from '../components/common/IconActionButton';
 import { Modal } from '../components/common/Modal';
 import { PageHeader } from '../components/common/PageHeader';
 import { StatCard } from '../components/common/StatCard';
 import { Table } from '../components/common/Table';
 import { AssignmentForm } from '../components/domain/AssignmentForm';
+import { AssignmentCloseModal } from '../components/domain/AssignmentCloseModal';
+import { AssignmentEditModal } from '../components/domain/AssignmentEditModal';
 import { AssetTransferModal } from '../components/domain/AssetTransferModal';
 import { useAction, useResource } from '../hooks/useResource';
 import { resourceConfigs } from '../constants/resourceConfigs';
@@ -19,8 +22,12 @@ export function AssignmentsPage() {
   const resource = useResource(() => config.service.list(), 'list');
   const createAction = useAction(config.service.create);
   const transferAction = useAction(assetService.transfer);
+  const closeAction = useAction(config.service.update);
+  const editAction = useAction(config.service.update);
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
   const [transferAssignment, setTransferAssignment] = useState(null);
+  const [closingAssignment, setClosingAssignment] = useState(null);
+  const [editingAssignment, setEditingAssignment] = useState(null);
   const [assignmentLookup, setAssignmentLookup] = useState({
     status: 'idle',
     categories: [],
@@ -57,7 +64,7 @@ export function AssignmentsPage() {
     }
   };
 
-  const closeAssignment = () => {
+  const closeNewAssignment = () => {
     if (createAction.status !== 'loading') setAssignmentModalOpen(false);
   };
 
@@ -67,7 +74,7 @@ export function AssignmentsPage() {
       setAssignmentModalOpen(false);
       resource.reload();
     } catch {
-      // The form displays the backend error inside the modal.
+      // The form displays request errors inside the modal.
     }
   };
 
@@ -104,6 +111,26 @@ export function AssignmentsPage() {
     resource.reload();
   };
 
+  const submitClose = async (payload) => {
+    try {
+      await closeAction.execute(recordId(closingAssignment, 'id'), { status: 'RETURNED', ...payload });
+      setClosingAssignment(null);
+      resource.reload();
+    } catch {
+      // The close form shows the request error inside its modal.
+    }
+  };
+
+  const submitEdit = async (payload) => {
+    try {
+      await editAction.execute(recordId(editingAssignment, 'id'), payload);
+      setEditingAssignment(null);
+      resource.reload();
+    } catch {
+      // The edit form shows the request error inside its modal.
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -132,23 +159,25 @@ export function AssignmentsPage() {
           error={resource.error}
           onRetry={resource.reload}
           emptyTitle="No assignments yet"
-          emptyDescription="Assignments will appear here when the backend returns them."
+          emptyDescription="Assignments will appear here after the first assignment."
           searchPlaceholder="Search assignments..."
-          rowActions={(row) =>
-            String(row.status).toUpperCase() === 'ACTIVE' ? (
-              <Button variant="outline" size="sm" icon="transfer" onClick={() => openTransfer(row)}>
-                Transfer
-              </Button>
-            ) : (
-              <span className="table-action-muted">Closed</span>
-            )
-          }
+          rowActionsLabel="Action"
+          rowActions={(row) => {
+            const active = String(row.status).toUpperCase() === 'ACTIVE';
+            return (
+              <div className="table-action-group">
+                {active && <IconActionButton icon="check" label="Close assignment" tone="success" onClick={() => setClosingAssignment(row)} />}
+                {active && <IconActionButton icon="transfer" label="Transfer asset" tone="transfer" onClick={() => openTransfer(row)} />}
+                <IconActionButton icon="edit" label="Edit assignment" tone="edit" onClick={() => setEditingAssignment(row)} />
+              </div>
+            );
+          }}
         />
       </Card>
 
       <Modal
         open={assignmentModalOpen}
-        onClose={closeAssignment}
+        onClose={closeNewAssignment}
         title={config.actionLabel}
         description="Choose a category, then select a verified available asset by asset tag or model number."
       >
@@ -171,7 +200,7 @@ export function AssignmentsPage() {
             employees={assignmentLookup.employees}
             submitting={createAction.status === 'loading'}
             actionError={createAction.status === 'error' ? createAction.error : null}
-            onClose={closeAssignment}
+            onClose={closeNewAssignment}
             onSubmit={submitAssignment}
           />
         )}
@@ -190,6 +219,26 @@ export function AssignmentsPage() {
           actionError={transferAction.error}
           onClose={closeTransfer}
           onSubmit={submitTransfer}
+        />
+      )}
+
+      {closingAssignment && (
+        <AssignmentCloseModal
+          assignment={closingAssignment}
+          submitting={closeAction.status === 'loading'}
+          actionError={closeAction.status === 'error' ? closeAction.error : null}
+          onClose={() => closeAction.status !== 'loading' && setClosingAssignment(null)}
+          onSubmit={submitClose}
+        />
+      )}
+
+      {editingAssignment && (
+        <AssignmentEditModal
+          assignment={editingAssignment}
+          submitting={editAction.status === 'loading'}
+          actionError={editAction.status === 'error' ? editAction.error : null}
+          onClose={() => editAction.status !== 'loading' && setEditingAssignment(null)}
+          onSubmit={submitEdit}
         />
       )}
     </div>

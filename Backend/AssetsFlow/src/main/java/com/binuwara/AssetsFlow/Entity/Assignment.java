@@ -52,6 +52,9 @@ public class Assignment extends BaseEntity {
     @Column(name = "handover_notes")
     private String handoverNotes;
 
+    @Column(name = "closing_reason")
+    private String closingReason;
+
     @jakarta.persistence.OneToMany(mappedBy = "previousAssignment")
     private Set<AssetTransfer> outgoingTransfers = new HashSet<>();
 

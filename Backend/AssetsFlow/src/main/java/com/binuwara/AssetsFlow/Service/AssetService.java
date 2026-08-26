@@ -179,6 +179,9 @@ public class AssetService {
         Location newLocation = request.newLocationId() == null ? asset.getLocation() : locationRepository.findById(request.newLocationId()).orElseThrow(() -> DomainSupport.notFound("Location"));
         AppUser actorUser = currentUser(actor);
         Instant transferredAt = request.transferredAtInstant() != null ? request.transferredAtInstant() : request.transferredAt() == null ? Instant.now() : request.transferredAt().atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+        if (request.expectedReturnDate() != null && request.expectedReturnDate().isBefore(transferredAt.atZone(java.time.ZoneOffset.UTC).toLocalDate())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Closing date cannot be before the transfer date.");
+        }
 
         previous.setStatus(AssignmentStatus.TRANSFERRED);
         previous.setReturnedAt(transferredAt);
@@ -190,6 +193,7 @@ public class AssetService {
         next.setAssignedByUser(actorUser);
         next.setAssignedAt(transferredAt);
         next.setStatus(AssignmentStatus.ACTIVE);
+        next.setExpectedReturnDate(request.expectedReturnDate());
         next.setHandoverNotes(request.notes());
         assignmentRepository.save(next);
 
@@ -322,6 +326,10 @@ public class AssetService {
             if (request.purchaseCost().signum() < 0) throw new ApiException(HttpStatus.BAD_REQUEST, "Purchase cost cannot be negative.");
             asset.setPurchaseCost(request.purchaseCost());
         }
+        if (request.warrantyPeriodMonths() != null) {
+            if (request.warrantyPeriodMonths() < 0) throw new ApiException(HttpStatus.BAD_REQUEST, "Warranty period cannot be negative.");
+            asset.setWarrantyPeriodMonths(request.warrantyPeriodMonths());
+        }
         if (request.currency() != null) asset.setCurrency(DomainSupport.currency(request.currency()));
         if (request.locationId() != null || StringUtils.hasText(request.location())) asset.setLocation(resolveLocation(request.locationId(), request.location()));
         if (request.departmentId() != null || StringUtils.hasText(request.department())) asset.setDepartment(resolveDepartment(request.departmentId(), request.department()));
@@ -368,7 +376,7 @@ public class AssetService {
         Assignment assignment = assignmentRepository.findByAsset_IdAndStatus(asset.getId(), AssignmentStatus.ACTIVE).orElse(null);
         Employee assigned = assignment == null ? null : assignment.getEmployee();
         String assignedName = assigned == null ? null : DomainSupport.fullName(assigned.getFirstName(), assigned.getLastName());
-        return new AssetResponse(asset.getId(), asset.getAssetTag(), asset.getName(), category == null ? null : category.getId(), category == null ? null : category.getName(), asset.getSerialNumber(), asset.getBrand(), asset.getModelNo(), vendor == null ? null : vendor.getId(), vendor == null ? null : vendor.getName(), location == null ? null : location.getId(), location == null ? null : location.getName(), department == null ? null : department.getId(), department == null ? null : department.getName(), asset.getStatus(), asset.getCondition(), asset.getCondition(), asset.getPurchaseDate(), asset.getPurchaseCost(), asset.getCurrency(), asset.getRetirementDate(), asset.getDisposalNotes(), asset.getNotes(), assigned == null ? null : assigned.getId(), assignedName, asset.getCreatedAt(), asset.getUpdatedAt());
+        return new AssetResponse(asset.getId(), asset.getAssetTag(), asset.getName(), category == null ? null : category.getId(), category == null ? null : category.getName(), asset.getSerialNumber(), asset.getBrand(), asset.getModelNo(), vendor == null ? null : vendor.getId(), vendor == null ? null : vendor.getName(), location == null ? null : location.getId(), location == null ? null : location.getName(), department == null ? null : department.getId(), department == null ? null : department.getName(), asset.getStatus(), asset.getCondition(), asset.getCondition(), asset.getPurchaseDate(), asset.getPurchaseCost(), asset.getWarrantyPeriodMonths(), asset.getCurrency(), asset.getRetirementDate(), asset.getDisposalNotes(), asset.getNotes(), assigned == null ? null : assigned.getId(), assignedName, asset.getCreatedAt(), asset.getUpdatedAt());
     }
 
     private AssetTransferResponse transferResponse(AssetTransfer transfer) {
