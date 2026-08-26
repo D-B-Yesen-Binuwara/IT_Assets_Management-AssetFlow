@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public record AssignmentRequest(
         UUID assetId,
+        UUID categoryId,
         UUID employeeId,
         Instant assignedAt,
         LocalDate assignedDate,

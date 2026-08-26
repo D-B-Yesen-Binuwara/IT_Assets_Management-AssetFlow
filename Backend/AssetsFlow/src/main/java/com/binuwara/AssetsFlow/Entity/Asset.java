@@ -43,11 +43,13 @@ public class Asset extends TimestampedEntity {
     @Column(name = "serial_number", unique = true, length = 120)
     private String serialNumber;
 
-    @Column(length = 120)
-    private String manufacturer;
+    // Preserve the established database column while exposing the clearer domain name.
+    @Column(name = "manufacturer", length = 120)
+    private String brand;
 
-    @Column(length = 120)
-    private String model;
+    // Existing installations store this in the `model` column.
+    @Column(name = "model", length = 120)
+    private String modelNo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vendor_id")

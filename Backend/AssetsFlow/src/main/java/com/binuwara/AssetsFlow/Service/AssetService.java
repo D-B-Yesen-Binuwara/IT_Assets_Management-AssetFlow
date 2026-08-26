@@ -312,8 +312,9 @@ public class AssetService {
     private void apply(Asset asset, AssetRequest request, boolean create) {
         if (request.categoryId() != null || StringUtils.hasText(request.category())) asset.setCategory(resolveCategory(request.categoryId(), request.category()));
         else if (create) throw new ApiException(HttpStatus.BAD_REQUEST, "Category is required.");
-        if (request.manufacturer() != null) asset.setManufacturer(DomainSupport.optionalText(request.manufacturer()));
-        if (request.model() != null) asset.setModel(DomainSupport.optionalText(request.model()));
+        if (request.brand() != null) asset.setBrand(DomainSupport.optionalText(request.brand()));
+        if (request.modelNo() != null) asset.setModelNo(DomainSupport.optionalText(request.modelNo()));
+        if (create && !StringUtils.hasText(asset.getModelNo())) throw new ApiException(HttpStatus.BAD_REQUEST, "Model No is required.");
         if (request.vendorId() != null || StringUtils.hasText(request.vendor())) asset.setVendor(resolveVendor(request.vendorId(), request.vendor()));
         if (request.purchaseOrderItemId() != null) asset.setPurchaseOrderItem(purchaseOrderItemRepository.findById(request.purchaseOrderItemId()).orElseThrow(() -> DomainSupport.notFound("Purchase order item")));
         if (request.purchaseDate() != null) asset.setPurchaseDate(request.purchaseDate());
@@ -367,7 +368,7 @@ public class AssetService {
         Assignment assignment = assignmentRepository.findByAsset_IdAndStatus(asset.getId(), AssignmentStatus.ACTIVE).orElse(null);
         Employee assigned = assignment == null ? null : assignment.getEmployee();
         String assignedName = assigned == null ? null : DomainSupport.fullName(assigned.getFirstName(), assigned.getLastName());
-        return new AssetResponse(asset.getId(), asset.getAssetTag(), asset.getName(), category == null ? null : category.getId(), category == null ? null : category.getName(), asset.getSerialNumber(), asset.getManufacturer(), asset.getModel(), vendor == null ? null : vendor.getId(), vendor == null ? null : vendor.getName(), location == null ? null : location.getId(), location == null ? null : location.getName(), department == null ? null : department.getId(), department == null ? null : department.getName(), asset.getStatus(), asset.getCondition(), asset.getCondition(), asset.getPurchaseDate(), asset.getPurchaseCost(), asset.getCurrency(), asset.getRetirementDate(), asset.getDisposalNotes(), asset.getNotes(), assigned == null ? null : assigned.getId(), assignedName, asset.getCreatedAt(), asset.getUpdatedAt());
+        return new AssetResponse(asset.getId(), asset.getAssetTag(), asset.getName(), category == null ? null : category.getId(), category == null ? null : category.getName(), asset.getSerialNumber(), asset.getBrand(), asset.getModelNo(), vendor == null ? null : vendor.getId(), vendor == null ? null : vendor.getName(), location == null ? null : location.getId(), location == null ? null : location.getName(), department == null ? null : department.getId(), department == null ? null : department.getName(), asset.getStatus(), asset.getCondition(), asset.getCondition(), asset.getPurchaseDate(), asset.getPurchaseCost(), asset.getCurrency(), asset.getRetirementDate(), asset.getDisposalNotes(), asset.getNotes(), assigned == null ? null : assigned.getId(), assignedName, asset.getCreatedAt(), asset.getUpdatedAt());
     }
 
     private AssetTransferResponse transferResponse(AssetTransfer transfer) {
