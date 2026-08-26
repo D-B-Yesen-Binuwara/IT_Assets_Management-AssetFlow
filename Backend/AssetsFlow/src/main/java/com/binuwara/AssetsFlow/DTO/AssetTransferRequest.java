@@ -12,6 +12,7 @@ public record AssetTransferRequest(
         String reason,
         LocalDate transferredAt,
         Instant transferredAtInstant,
+        LocalDate expectedReturnDate,
         String notes,
         AssetTransferStatus status
 ) {

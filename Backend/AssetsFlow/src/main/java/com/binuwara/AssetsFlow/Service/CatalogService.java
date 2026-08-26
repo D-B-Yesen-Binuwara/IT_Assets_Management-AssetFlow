@@ -363,7 +363,9 @@ public class CatalogService {
         if (request.phone() != null) employee.setPhone(DomainSupport.optionalText(request.phone()));
         if (request.address() != null) employee.setAddress(DomainSupport.optionalText(request.address()));
         if (request.jobTitle() != null) employee.setJobTitle(DomainSupport.optionalText(request.jobTitle()));
-        if (request.departmentId() != null || StringUtils.hasText(request.department())) employee.setDepartment(resolveDepartment(request.departmentId(), request.department()));
+        if (request.branchId() != null || StringUtils.hasText(request.branch())) employee.setBranch(resolveLocation(request.branchId(), request.branch()));
+        else if (create) throw new ApiException(HttpStatus.BAD_REQUEST, "Branch is required.");
+        if (request.departmentId() != null || request.department() != null) employee.setDepartment(resolveDepartment(request.departmentId(), request.department()));
         if (request.status() != null) employee.setStatus(request.status());
         if (request.hireDate() != null) employee.setHireDate(request.hireDate());
         if (request.terminationDate() != null) employee.setTerminationDate(request.terminationDate());
@@ -413,7 +415,8 @@ public class CatalogService {
 
     private EmployeeResponse employeeResponse(Employee employee) {
         Department department = employee.getDepartment();
-        return new EmployeeResponse(employee.getId(), employee.getEmployeeNumber(), employee.getFirstName(), employee.getLastName(), DomainSupport.fullName(employee.getFirstName(), employee.getLastName()), employee.getEmail(), employee.getPhone(), employee.getAddress(), employee.getJobTitle(), department == null ? null : department.getId(), department == null ? null : department.getName(), employee.getStatus(), employee.getHireDate(), employee.getTerminationDate(), employee.getAppUser() != null, employee.getCreatedAt(), employee.getUpdatedAt());
+        Location branch = employee.getBranch();
+        return new EmployeeResponse(employee.getId(), employee.getEmployeeNumber(), employee.getFirstName(), employee.getLastName(), DomainSupport.fullName(employee.getFirstName(), employee.getLastName()), employee.getEmail(), employee.getPhone(), employee.getAddress(), employee.getJobTitle(), branch == null ? null : branch.getId(), branch == null ? null : branch.getName(), department == null ? null : department.getId(), department == null ? null : department.getName(), employee.getStatus(), employee.getHireDate(), employee.getTerminationDate(), employee.getAppUser() != null, employee.getCreatedAt(), employee.getUpdatedAt());
     }
 
     private LocationResponse locationResponse(Location location) {

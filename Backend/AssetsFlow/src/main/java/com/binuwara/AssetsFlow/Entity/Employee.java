@@ -46,6 +46,10 @@ public class Employee extends TimestampedEntity {
     @Column(name = "job_title", length = 120)
     private String jobTitle;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "branch_id", nullable = false)
+    private Location branch;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;

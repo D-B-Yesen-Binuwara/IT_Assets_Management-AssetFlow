@@ -14,6 +14,8 @@ public record EmployeeRequest(
         String phone,
         String address,
         String jobTitle,
+        UUID branchId,
+        String branch,
         UUID departmentId,
         String department,
         EmployeeStatus status,

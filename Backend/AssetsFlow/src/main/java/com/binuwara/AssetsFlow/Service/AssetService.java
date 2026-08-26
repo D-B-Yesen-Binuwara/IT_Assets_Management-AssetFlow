@@ -179,6 +179,9 @@ public class AssetService {
         Location newLocation = request.newLocationId() == null ? asset.getLocation() : locationRepository.findById(request.newLocationId()).orElseThrow(() -> DomainSupport.notFound("Location"));
         AppUser actorUser = currentUser(actor);
         Instant transferredAt = request.transferredAtInstant() != null ? request.transferredAtInstant() : request.transferredAt() == null ? Instant.now() : request.transferredAt().atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+        if (request.expectedReturnDate() != null && request.expectedReturnDate().isBefore(transferredAt.atZone(java.time.ZoneOffset.UTC).toLocalDate())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Closing date cannot be before the transfer date.");
+        }
 
         previous.setStatus(AssignmentStatus.TRANSFERRED);
         previous.setReturnedAt(transferredAt);
@@ -190,6 +193,7 @@ public class AssetService {
         next.setAssignedByUser(actorUser);
         next.setAssignedAt(transferredAt);
         next.setStatus(AssignmentStatus.ACTIVE);
+        next.setExpectedReturnDate(request.expectedReturnDate());
         next.setHandoverNotes(request.notes());
         assignmentRepository.save(next);
 

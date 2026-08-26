@@ -98,7 +98,11 @@ public class AssignmentService {
     @Transactional
     public AssignmentResponse update(UUID id, AssignmentRequest request, AuthenticatedUser actor) {
         Assignment assignment = assignmentRepository.findById(id).orElseThrow(() -> DomainSupport.notFound("Assignment"));
+        if (request.assignedAt() != null || request.assignedDate() != null) assignment.setAssignedAt(resolveAssignedAt(request));
         if (request.expectedReturnDate() != null) assignment.setExpectedReturnDate(request.expectedReturnDate());
+        if (assignment.getExpectedReturnDate() != null && assignment.getExpectedReturnDate().isBefore(assignment.getAssignedAt().atZone(ZoneOffset.UTC).toLocalDate())) {
+            throw new com.binuwara.AssetsFlow.Exception.ApiException(HttpStatus.BAD_REQUEST, "Expected return date cannot be before the assignment date.");
+        }
         if (request.handoverNotes() != null) assignment.setHandoverNotes(DomainSupport.optionalText(request.handoverNotes()));
         if (request.status() != null && request.status() != assignment.getStatus()) closeOrReopen(assignment, request.status());
         if (request.closingReason() != null) assignment.setClosingReason(DomainSupport.optionalText(request.closingReason()));
