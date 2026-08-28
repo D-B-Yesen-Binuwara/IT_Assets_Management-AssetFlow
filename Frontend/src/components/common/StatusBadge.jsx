@@ -2,6 +2,9 @@ const tone = (status = '') => {
   const value = String(status).toLowerCase().trim().replace(/[-\s]+/g, '_');
   const tones = {
     active: 'info',
+    inactive: 'slate',
+    on_leave: 'amber',
+    terminated: 'danger',
     assigned: 'indigo',
     available: 'success',
     approved: 'success',
@@ -28,4 +31,15 @@ const tone = (status = '') => {
   return tones[value] || 'neutral';
 };
 
-export function StatusBadge({ status }) { return <span className={`status-badge ${tone(status)}`}><span />{status || 'Unknown'}</span>; }
+const display = (status) => {
+  const value = String(status || '').toUpperCase();
+  const labels = {
+    UNDER_MAINTENANCE: 'Maintenance',
+    IN_TRANSIT: 'In Transit',
+    ON_LEAVE: 'Suspended',
+    TERMINATED: 'Left',
+  };
+  return labels[value] || String(status || 'Unknown').replace(/_/g, ' ');
+};
+
+export function StatusBadge({ status }) { return <span className={`status-badge ${tone(status)}`}><span />{display(status)}</span>; }

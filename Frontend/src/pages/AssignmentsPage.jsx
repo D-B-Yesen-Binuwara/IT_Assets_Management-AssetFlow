@@ -28,6 +28,7 @@ export function AssignmentsPage() {
   const [transferAssignment, setTransferAssignment] = useState(null);
   const [closingAssignment, setClosingAssignment] = useState(null);
   const [editingAssignment, setEditingAssignment] = useState(null);
+  const [editLookup, setEditLookup] = useState({ status: 'idle', employees: [], error: null });
   const [assignmentLookup, setAssignmentLookup] = useState({
     status: 'idle',
     categories: [],
@@ -111,6 +112,17 @@ export function AssignmentsPage() {
     resource.reload();
   };
 
+  const openEdit = async (assignment) => {
+    setEditingAssignment(assignment);
+    setEditLookup({ status: 'loading', employees: [], error: null });
+    try {
+      const employeeData = await employeeService.list();
+      setEditLookup({ status: 'success', employees: collectionItems(employeeData), error: null });
+    } catch (error) {
+      setEditLookup({ status: 'error', employees: [], error });
+    }
+  };
+
   const submitClose = async (payload) => {
     try {
       await closeAction.execute(recordId(closingAssignment, 'id'), { status: 'RETURNED', ...payload });
@@ -135,6 +147,7 @@ export function AssignmentsPage() {
     <div>
       <PageHeader
         title={config.title}
+        className="assignment-page-header"
         description={config.description}
         breadcrumbs={[{ label: config.title }]}
         actions={
@@ -168,7 +181,7 @@ export function AssignmentsPage() {
               <div className="table-action-group">
                 {active && <IconActionButton icon="check" label="Close assignment" tone="success" onClick={() => setClosingAssignment(row)} />}
                 {active && <IconActionButton icon="transfer" label="Transfer asset" tone="transfer" onClick={() => openTransfer(row)} />}
-                <IconActionButton icon="edit" label="Edit assignment" tone="edit" onClick={() => setEditingAssignment(row)} />
+                <IconActionButton icon="edit" label="Edit assignment" tone="edit" onClick={() => openEdit(row)} />
               </div>
             );
           }}
@@ -235,8 +248,9 @@ export function AssignmentsPage() {
       {editingAssignment && (
         <AssignmentEditModal
           assignment={editingAssignment}
+          employees={editLookup.employees}
           submitting={editAction.status === 'loading'}
-          actionError={editAction.status === 'error' ? editAction.error : null}
+          actionError={editAction.status === 'error' ? editAction.error : editLookup.status === 'error' ? editLookup.error : null}
           onClose={() => editAction.status !== 'loading' && setEditingAssignment(null)}
           onSubmit={submitEdit}
         />

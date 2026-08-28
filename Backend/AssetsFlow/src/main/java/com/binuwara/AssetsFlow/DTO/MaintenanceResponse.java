@@ -25,6 +25,7 @@ public record MaintenanceResponse(
         UUID vendorId,
         String vendor,
         Instant openedAt,
+        LocalDate startDate,
         LocalDate dueDate,
         Instant startedAt,
         Instant completedAt,

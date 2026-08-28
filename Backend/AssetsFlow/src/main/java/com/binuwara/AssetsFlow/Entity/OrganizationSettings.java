@@ -40,7 +40,7 @@ public class OrganizationSettings {
 
     @JdbcTypeCode(Types.CHAR)
     @Column(columnDefinition = "char(3)", nullable = false, length = 3)
-    private String currency = "USD";
+    private String currency = "LKR";
 
     @Column(nullable = false, length = 80)
     private String timezone = "UTC";

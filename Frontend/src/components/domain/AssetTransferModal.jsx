@@ -11,6 +11,7 @@ const initialForm = (assignment) => ({
   newLocationId: recordId(assignment, 'locationId'),
   reason: '',
   transferredAt: today(),
+  expectedReturnDate: assignment?.expectedReturnDate || '',
   notes: '',
 });
 
@@ -61,6 +62,7 @@ export function AssetTransferModal({
     await onSubmit({
       ...form,
       newLocationId: form.newLocationId || null,
+      expectedReturnDate: form.expectedReturnDate || null,
     });
   };
 
@@ -116,7 +118,7 @@ export function AssetTransferModal({
           </label>
 
           <label>
-            New location <span className="optional-label">(optional)</span>
+            <span className="field-label">New branch <span className="optional-label">(optional)</span></span>
             <select
               value={form.newLocationId}
               onChange={(event) => updateField('newLocationId', event.target.value)}
@@ -157,7 +159,18 @@ export function AssetTransferModal({
           </label>
 
           <label>
-            Notes <span className="optional-label">(optional)</span>
+            <span className="field-label">New closing date <span className="optional-label">(optional)</span></span>
+            <input
+              type="date"
+              value={form.expectedReturnDate}
+              onChange={(event) => updateField('expectedReturnDate', event.target.value)}
+              min={form.transferredAt || undefined}
+              disabled={isBusy}
+            />
+          </label>
+
+          <label>
+            <span className="field-label">Notes <span className="optional-label">(optional)</span></span>
             <textarea
               value={form.notes}
               onChange={(event) => updateField('notes', event.target.value)}

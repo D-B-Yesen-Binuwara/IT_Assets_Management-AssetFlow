@@ -26,6 +26,10 @@ export const assetService = {
   lifecycle: (assetId) => request(`/assets/${assetId}/lifecycle`),
   valuations: (assetId) => request(`/assets/${assetId}/valuations`),
   disposal: (assetId) => request(`/assets/${assetId}/disposal`),
+  changeStatus: (assetId, payload) => request(`/assets/${assetId}/status`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
 };
 export const employeeService = collection('/employees');
 export const departmentService = collection('/departments');

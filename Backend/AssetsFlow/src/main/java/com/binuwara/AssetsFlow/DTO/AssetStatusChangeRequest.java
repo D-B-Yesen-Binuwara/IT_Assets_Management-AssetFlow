@@ -4,19 +4,19 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
-public record MaintenanceRequest(
-        UUID assetId,
-        String ticketNumber,
-        String issue,
+public record AssetStatusChangeRequest(
+        String status,
+        String reason,
         String description,
         String priority,
+        LocalDate effectiveDate,
         LocalDate startDate,
         LocalDate dueDate,
         UUID vendorId,
-        UUID requestedByEmployeeId,
         UUID assignedToEmployeeId,
-        BigDecimal cost,
-        String status,
-        String resolution
+        LocalDate disposalDate,
+        String disposalMethod,
+        BigDecimal proceeds,
+        String notes
 ) {
 }

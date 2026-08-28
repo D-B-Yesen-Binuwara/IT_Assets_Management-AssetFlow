@@ -2,9 +2,17 @@ import { useMemo, useState } from 'react';
 import { Button } from '../common/Button';
 import { Icon } from '../common/Icon';
 import { recordId } from '../../utils/collections';
+import { AssetStatusFields } from './AssetStatusFields';
+import { initialStatusDetails } from './assetStatusUtils';
 
 const ADD_NEW = '__add_new__';
-const assetStatuses = ['AVAILABLE', 'ASSIGNED', 'UNDER_MAINTENANCE', 'IN_TRANSIT', 'DISPOSED', 'RETIRED', 'LOST'];
+const assetStatuses = [
+  { value: 'AVAILABLE', label: 'Available' },
+  { value: 'UNDER_MAINTENANCE', label: 'Maintenance' },
+  { value: 'IN_TRANSIT', label: 'In Transit' },
+  { value: 'DISPOSED', label: 'Disposed' },
+  { value: 'LOST', label: 'Lost' },
+];
 const assetConditions = ['NEW', 'GOOD', 'FAIR', 'POOR', 'DAMAGED'];
 
 const initialValues = (asset) => ({
@@ -23,11 +31,17 @@ const initialValues = (asset) => ({
   vendorId: recordId(asset, 'vendorId'),
   purchaseDate: asset?.purchaseDate || '',
   purchaseCost: asset?.purchaseCost ?? '',
-  warrantyPeriodMonths: asset?.warrantyPeriodMonths ?? '',
-  currency: asset?.currency || 'USD',
+  currency: 'LKR',
+  warrantyId: recordId(asset, 'warrantyId'),
+  warrantyVendorId: recordId(asset, 'warrantyVendorId'),
+  warrantyPolicyNumber: asset?.warrantyPolicyNumber || '',
+  warrantyStartDate: asset?.warrantyStartDate || '',
+  warrantyEndDate: asset?.warrantyEndDate || '',
+  warrantyCoverage: asset?.warrantyCoverage || '',
   condition: asset?.condition || asset?.assetCondition || 'GOOD',
   status: asset?.status || 'AVAILABLE',
   notes: asset?.notes || '',
+  ...initialStatusDetails(),
 });
 
 const uniqueBrands = (assets) => Array.from(new Set(
@@ -41,12 +55,16 @@ export function AssetForm({
   vendors = [],
   locations = [],
   assets = [],
+  employees = [],
   submitting = false,
   actionError,
   onClose,
   onSubmit,
 }) {
   const [form, setForm] = useState(() => initialValues(asset));
+  const [warrantyStartEdited, setWarrantyStartEdited] = useState(
+    () => Boolean(asset?.warrantyStartDate && asset.warrantyStartDate !== asset?.purchaseDate),
+  );
   const isEditing = Boolean(recordId(asset, 'id'));
   const brands = useMemo(() => uniqueBrands(assets), [assets]);
   const activeCategories = useMemo(
@@ -58,6 +76,9 @@ export function AssetForm({
     [vendors, form.vendorId],
   );
   const selectedVendor = vendors.find((vendor) => recordId(vendor, 'id') === form.vendorId);
+  const statusChanged = form.status !== (asset?.status || 'AVAILABLE');
+  const hasWarrantyDetails = [form.warrantyVendorId, form.warrantyPolicyNumber, form.warrantyEndDate, form.warrantyCoverage].some(Boolean)
+    || Boolean(form.warrantyStartDate && form.warrantyStartDate !== form.purchaseDate);
 
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
 
@@ -78,6 +99,19 @@ export function AssetForm({
     setForm((current) => ({ ...current, brand: value, newBrand: value === ADD_NEW ? current.newBrand : '' }));
   };
 
+  const changePurchaseDate = (value) => {
+    setForm((current) => ({
+      ...current,
+      purchaseDate: value,
+      warrantyStartDate: warrantyStartEdited ? current.warrantyStartDate : value,
+    }));
+  };
+
+  const changeWarrantyStartDate = (value) => {
+    setWarrantyStartEdited(true);
+    update('warrantyStartDate', value);
+  };
+
   const submit = (event) => {
     event.preventDefault();
     onSubmit({
@@ -89,7 +123,12 @@ export function AssetForm({
       locationId: form.locationId || null,
       purchaseDate: form.purchaseDate || null,
       purchaseCost: form.purchaseCost === '' ? null : Number(form.purchaseCost),
-      warrantyPeriodMonths: form.warrantyPeriodMonths === '' ? null : Number(form.warrantyPeriodMonths),
+      currency: 'LKR',
+      warrantyVendorId: form.warrantyVendorId || null,
+      warrantyPolicyNumber: form.warrantyPolicyNumber || null,
+      warrantyStartDate: hasWarrantyDetails ? form.warrantyStartDate || null : null,
+      warrantyEndDate: hasWarrantyDetails ? form.warrantyEndDate || null : null,
+      warrantyCoverage: hasWarrantyDetails ? form.warrantyCoverage || null : null,
       notes: form.notes || null,
     });
   };
@@ -126,7 +165,7 @@ export function AssetForm({
             </label>
           )}
           <label>
-            Brand <span className="optional-label">(optional)</span>
+            <span className="field-label">Brand <span className="optional-label">(optional)</span></span>
             <select value={form.brand} onChange={(event) => changeBrand(event.target.value)} disabled={submitting}>
               <option value="">No brand selected</option>
               {brands.map((brand) => <option key={brand} value={brand}>{brand}</option>)}
@@ -134,7 +173,7 @@ export function AssetForm({
             </select>
           </label>
           <label>
-            Serial number <span className="optional-label">(optional)</span>
+            <span className="field-label">Serial number <span className="optional-label">(optional)</span></span>
             <input value={form.serialNumber} onChange={(event) => update('serialNumber', event.target.value)} placeholder="Enter serial number" disabled={submitting} />
           </label>
           {form.brand === ADD_NEW && (
@@ -150,7 +189,7 @@ export function AssetForm({
         <h3>Ownership and lifecycle</h3>
         <div className="form-fields two">
           <label>
-            Department <span className="optional-label">(optional)</span>
+            <span className="field-label">Department <span className="optional-label">(optional)</span></span>
             <select value={form.departmentId} onChange={(event) => changeDepartment(event.target.value)} disabled={submitting}>
               <option value="">No department selected</option>
               {departments.map((department) => <option key={recordId(department, 'id')} value={recordId(department, 'id')}>{department.name}{department.code ? ` (${department.code})` : ''}</option>)}
@@ -158,7 +197,7 @@ export function AssetForm({
             </select>
           </label>
           <label>
-            Location <span className="optional-label">(optional)</span>
+            <span className="field-label">Branch <span className="optional-label">(optional)</span></span>
             <select value={form.locationId} onChange={(event) => update('locationId', event.target.value)} disabled={submitting}>
               <option value="">No location selected</option>
               {locations.map((location) => <option key={recordId(location, 'id')} value={recordId(location, 'id')}>{location.name}{location.code ? ` (${location.code})` : ''}</option>)}
@@ -176,11 +215,17 @@ export function AssetForm({
               </label>
             </div>
           )}
-          {isEditing && (
+          {isEditing && form.status === 'ASSIGNED' && (
+            <label>
+              Status
+              <input value="Assigned automatically from the active assignment" readOnly />
+            </label>
+          )}
+          {form.status !== 'ASSIGNED' && (
             <label>
               Status
               <select value={form.status} onChange={(event) => update('status', event.target.value)} disabled={submitting}>
-                {assetStatuses.map((status) => <option key={status} value={status}>{status.replace(/_/g, ' ')}</option>)}
+              {assetStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}
               </select>
             </label>
           )}
@@ -190,14 +235,17 @@ export function AssetForm({
               {assetConditions.map((condition) => <option key={condition} value={condition}>{condition}</option>)}
             </select>
           </label>
+          {statusChanged && (
+            <AssetStatusFields status={form.status} form={form} update={update} vendors={vendors} employees={employees} disabled={submitting} />
+          )}
         </div>
       </div>
 
       <div className="asset-form-section">
-        <h3>Vendor and purchase details <span className="optional-label">(all optional)</span></h3>
+        <h3>Vendor and purchase details</h3>
         <div className="form-fields two">
           <label className="form-field-wide">
-            Vendor
+            <span className="field-label">Vendor <span className="optional-label">(optional)</span></span>
             <select value={form.vendorId} onChange={(event) => update('vendorId', event.target.value)} disabled={submitting}>
               <option value="">No vendor selected</option>
               {activeVendors.map((vendor) => <option key={recordId(vendor, 'id')} value={recordId(vendor, 'id')}>{vendor.name}{vendor.vendorCode ? ` (${vendor.vendorCode})` : ''}</option>)}
@@ -220,23 +268,38 @@ export function AssetForm({
             <input value={selectedVendor?.email || ''} readOnly />
           </label>
           <label>
-            Purchase date
-            <input type="date" value={form.purchaseDate} onChange={(event) => update('purchaseDate', event.target.value)} disabled={submitting} />
+            <span className="field-label">Purchase date <span className="optional-label">(optional)</span></span>
+            <input type="date" value={form.purchaseDate} onChange={(event) => changePurchaseDate(event.target.value)} disabled={submitting} />
           </label>
           <label>
-            Price
+            <span className="field-label">Price (Rs) <span className="optional-label">(optional)</span></span>
             <input type="number" min="0" step="0.01" value={form.purchaseCost} onChange={(event) => update('purchaseCost', event.target.value)} placeholder="0.00" disabled={submitting} />
           </label>
           <label>
-            Warranty period (months)
-            <input type="number" min="0" step="1" value={form.warrantyPeriodMonths} onChange={(event) => update('warrantyPeriodMonths', event.target.value)} placeholder="e.g. 24" disabled={submitting} />
+            <span className="field-label">Warranty provider <span className="optional-label">(optional)</span></span>
+            <select value={form.warrantyVendorId} onChange={(event) => update('warrantyVendorId', event.target.value)} disabled={submitting}>
+              <option value="">No warranty provider selected</option>
+              {activeVendors.map((vendor) => <option key={recordId(vendor, 'id')} value={recordId(vendor, 'id')}>{vendor.name}{vendor.vendorCode ? ` (${vendor.vendorCode})` : ''}</option>)}
+            </select>
           </label>
           <label>
-            Currency
-            <input value={form.currency} onChange={(event) => update('currency', event.target.value.toUpperCase())} maxLength="3" placeholder="USD" disabled={submitting} />
+            <span className="field-label">Policy code <span className="optional-label">(optional)</span></span>
+            <input value={form.warrantyPolicyNumber} onChange={(event) => update('warrantyPolicyNumber', event.target.value)} placeholder="Enter warranty policy code" disabled={submitting} />
+          </label>
+          <label>
+            <span className="field-label">Warranty start date <span className="optional-label">(optional)</span></span>
+            <input type="date" value={form.warrantyStartDate} max={form.warrantyEndDate || undefined} onChange={(event) => changeWarrantyStartDate(event.target.value)} required={hasWarrantyDetails} disabled={submitting} />
+          </label>
+          <label>
+            <span className="field-label">Warranty end date <span className="optional-label">(optional)</span></span>
+            <input type="date" value={form.warrantyEndDate} min={form.warrantyStartDate || undefined} onChange={(event) => update('warrantyEndDate', event.target.value)} required={hasWarrantyDetails} disabled={submitting} />
           </label>
           <label className="form-field-wide">
-            Notes <span className="optional-label">(optional)</span>
+            <span className="field-label">Warranty coverage <span className="optional-label">(optional)</span></span>
+            <textarea value={form.warrantyCoverage} onChange={(event) => update('warrantyCoverage', event.target.value)} placeholder="Describe what the warranty covers" rows="3" disabled={submitting} />
+          </label>
+          <label className="form-field-wide">
+            <span className="field-label">Notes <span className="optional-label">(optional)</span></span>
             <textarea value={form.notes} onChange={(event) => update('notes', event.target.value)} placeholder="Add any useful asset notes" rows="3" disabled={submitting} />
           </label>
         </div>

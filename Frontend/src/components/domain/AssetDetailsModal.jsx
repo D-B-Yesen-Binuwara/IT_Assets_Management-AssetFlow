@@ -3,9 +3,9 @@ import { StatusBadge } from '../common/StatusBadge';
 
 const value = (item) => item === null || item === undefined || item === '' ? '—' : item;
 const date = (item) => item ? new Date(`${item}T00:00:00`).toLocaleDateString() : '—';
-const amount = (item, currency) => item === null || item === undefined || item === ''
+const amount = (item) => item === null || item === undefined || item === ''
   ? '—'
-  : `${currency || 'USD'} ${Number(item).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  : `Rs ${Number(item).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 function DetailSection({ title, children }) {
   return (
@@ -63,8 +63,12 @@ export function AssetDetailsModal({ asset, vendor, onClose }) {
           <Detail label="Vendor contact no">{value(vendor?.phone)}</Detail>
           <Detail label="Vendor email">{value(vendor?.email)}</Detail>
           <Detail label="Purchase date">{date(asset.purchaseDate)}</Detail>
-          <Detail label="Price">{amount(asset.purchaseCost, asset.currency)}</Detail>
-          <Detail label="Warranty period">{asset.warrantyPeriodMonths === null || asset.warrantyPeriodMonths === undefined ? '—' : `${asset.warrantyPeriodMonths} months`}</Detail>
+          <Detail label="Price">{amount(asset.purchaseCost)}</Detail>
+          <Detail label="Warranty provider">{value(asset.warrantyProvider)}</Detail>
+          <Detail label="Policy code">{value(asset.warrantyPolicyNumber)}</Detail>
+          <Detail label="Warranty start date">{date(asset.warrantyStartDate)}</Detail>
+          <Detail label="Warranty end date">{date(asset.warrantyEndDate)}</Detail>
+          <Detail label="Warranty coverage">{value(asset.warrantyCoverage)}</Detail>
         </DetailSection>
 
         {(asset.notes || asset.disposalNotes) && (

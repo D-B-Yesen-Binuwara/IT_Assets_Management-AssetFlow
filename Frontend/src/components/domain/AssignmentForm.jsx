@@ -45,6 +45,7 @@ export function AssignmentForm({
     () => categoryAssets.filter((asset) => normalize(assetModelNo(asset)) === normalize(form.modelNo)),
     [categoryAssets, form.modelNo],
   );
+  const selectedEmployee = employees.find((employee) => recordId(employee, 'id') === form.employeeId);
 
   const selectAsset = (asset) => {
     setSelectedAsset(asset);
@@ -225,6 +226,13 @@ export function AssignmentForm({
               })}
             </select>
           </label>
+
+          <div className="form-fields two employee-details" aria-live="polite">
+            <label>Department<input value={selectedEmployee?.department || ''} readOnly /></label>
+            <label>Branch<input value={selectedEmployee?.branch || ''} readOnly /></label>
+            <label>Email<input value={selectedEmployee?.email || ''} readOnly /></label>
+            <label>Contact No<input value={selectedEmployee?.phone || ''} readOnly /></label>
+          </div>
 
           <div className="form-fields two">
             <label>

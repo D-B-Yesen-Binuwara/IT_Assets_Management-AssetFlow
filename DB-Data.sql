@@ -203,6 +203,14 @@ VALUES
     (NULL, 'FIN-BRANCH', 'Finance Branch Office', 'BRANCH', '22 Finance Avenue', 'Colombo', 'Sri Lanka')
 ON CONFLICT (code) DO NOTHING;
 
+UPDATE employees
+SET branch_id = CASE
+    WHEN department_id = (SELECT id FROM departments WHERE code = 'FIN')
+        THEN (SELECT id FROM locations WHERE code = 'FIN-BRANCH')
+    ELSE (SELECT id FROM locations WHERE code = 'HQ')
+END
+WHERE branch_id IS NULL;
+
 INSERT INTO locations (
     parent_location_id, code, name, location_type,
     address_line, city, country

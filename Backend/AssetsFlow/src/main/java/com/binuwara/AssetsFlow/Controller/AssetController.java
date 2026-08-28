@@ -4,6 +4,7 @@ import com.binuwara.AssetsFlow.DTO.AssetDisposalRequest;
 import com.binuwara.AssetsFlow.DTO.AssetDisposalResponse;
 import com.binuwara.AssetsFlow.DTO.AssetRequest;
 import com.binuwara.AssetsFlow.DTO.AssetResponse;
+import com.binuwara.AssetsFlow.DTO.AssetStatusChangeRequest;
 import com.binuwara.AssetsFlow.DTO.AssetTransferRequest;
 import com.binuwara.AssetsFlow.DTO.AssetTransferResponse;
 import com.binuwara.AssetsFlow.DTO.AssetValuationRequest;
@@ -49,6 +50,10 @@ public class AssetController {
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','DEPARTMENT_HEAD')")
     public AssetResponse update(@PathVariable UUID id, @RequestBody AssetRequest request, @AuthenticationPrincipal AuthenticatedUser actor) { return assetService.update(id, request, actor); }
+
+    @PostMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','DEPARTMENT_HEAD')")
+    public AssetResponse changeStatus(@PathVariable UUID id, @RequestBody AssetStatusChangeRequest request, @AuthenticationPrincipal AuthenticatedUser actor) { return assetService.changeStatus(id, request, actor); }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")

@@ -119,7 +119,7 @@ export function WarrantyForm({ categories = [], assets = [], vendors = [], submi
               {vendors.filter((vendor) => String(vendor.status || 'ACTIVE').toUpperCase() === 'ACTIVE').map((vendor) => <option key={recordId(vendor, 'id')} value={recordId(vendor, 'id')}>{vendor.name}</option>)}
             </select>
           </label>
-          <label>Policy number <span className="optional-label">(optional)</span><input value={form.policyNumber} onChange={(event) => update('policyNumber', event.target.value)} placeholder="Enter policy number" /></label>
+          <label>Policy code <span className="optional-label">(optional)</span><input value={form.policyNumber} onChange={(event) => update('policyNumber', event.target.value)} placeholder="Enter policy code" /></label>
           <div className="form-fields two">
             <label>Warranty start date<input type="date" value={form.startDate} onChange={(event) => update('startDate', event.target.value)} required /></label>
             <label>Warranty end date<input type="date" value={form.endDate} onChange={(event) => update('endDate', event.target.value)} min={form.startDate || undefined} required /></label>

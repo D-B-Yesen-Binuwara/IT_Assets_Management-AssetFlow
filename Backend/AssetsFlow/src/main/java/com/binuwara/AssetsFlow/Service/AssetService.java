@@ -4,6 +4,7 @@ import com.binuwara.AssetsFlow.DTO.AssetDisposalRequest;
 import com.binuwara.AssetsFlow.DTO.AssetDisposalResponse;
 import com.binuwara.AssetsFlow.DTO.AssetRequest;
 import com.binuwara.AssetsFlow.DTO.AssetResponse;
+import com.binuwara.AssetsFlow.DTO.AssetStatusChangeRequest;
 import com.binuwara.AssetsFlow.DTO.AssetTransferRequest;
 import com.binuwara.AssetsFlow.DTO.AssetTransferResponse;
 import com.binuwara.AssetsFlow.DTO.AssetValuationRequest;
@@ -27,8 +28,13 @@ import com.binuwara.AssetsFlow.Entity.AssignmentStatus;
 import com.binuwara.AssetsFlow.Entity.Department;
 import com.binuwara.AssetsFlow.Entity.Employee;
 import com.binuwara.AssetsFlow.Entity.Location;
+import com.binuwara.AssetsFlow.Entity.MaintenancePriority;
+import com.binuwara.AssetsFlow.Entity.MaintenanceStatus;
+import com.binuwara.AssetsFlow.Entity.MaintenanceTicket;
 import com.binuwara.AssetsFlow.Entity.PurchaseOrderItem;
 import com.binuwara.AssetsFlow.Entity.Vendor;
+import com.binuwara.AssetsFlow.Entity.WarrantyPolicy;
+import com.binuwara.AssetsFlow.Entity.WarrantyStatus;
 import com.binuwara.AssetsFlow.Exception.ApiException;
 import com.binuwara.AssetsFlow.Repository.AppUserRepository;
 import com.binuwara.AssetsFlow.Repository.AssetCategoryRepository;
@@ -42,8 +48,10 @@ import com.binuwara.AssetsFlow.Repository.AuditLogRepository;
 import com.binuwara.AssetsFlow.Repository.DepartmentRepository;
 import com.binuwara.AssetsFlow.Repository.EmployeeRepository;
 import com.binuwara.AssetsFlow.Repository.LocationRepository;
+import com.binuwara.AssetsFlow.Repository.MaintenanceTicketRepository;
 import com.binuwara.AssetsFlow.Repository.PurchaseOrderItemRepository;
 import com.binuwara.AssetsFlow.Repository.VendorRepository;
+import com.binuwara.AssetsFlow.Repository.WarrantyPolicyRepository;
 import com.binuwara.AssetsFlow.Security.AuthenticatedUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -66,6 +74,8 @@ public class AssetService {
     private final EmployeeRepository employeeRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final AssignmentRepository assignmentRepository;
+    private final MaintenanceTicketRepository maintenanceRepository;
+    private final WarrantyPolicyRepository warrantyRepository;
     private final AssetTransferRepository transferRepository;
     private final AssetDisposalRepository disposalRepository;
     private final AssetValuationRepository valuationRepository;
@@ -82,6 +92,8 @@ public class AssetService {
             EmployeeRepository employeeRepository,
             PurchaseOrderItemRepository purchaseOrderItemRepository,
             AssignmentRepository assignmentRepository,
+            MaintenanceTicketRepository maintenanceRepository,
+            WarrantyPolicyRepository warrantyRepository,
             AssetTransferRepository transferRepository,
             AssetDisposalRepository disposalRepository,
             AssetValuationRepository valuationRepository,
@@ -97,6 +109,8 @@ public class AssetService {
         this.employeeRepository = employeeRepository;
         this.purchaseOrderItemRepository = purchaseOrderItemRepository;
         this.assignmentRepository = assignmentRepository;
+        this.maintenanceRepository = maintenanceRepository;
+        this.warrantyRepository = warrantyRepository;
         this.transferRepository = transferRepository;
         this.disposalRepository = disposalRepository;
         this.valuationRepository = valuationRepository;
@@ -131,6 +145,7 @@ public class AssetService {
         asset.setName(DomainSupport.text(request.name(), "Asset name"));
         apply(asset, request, true);
         Asset saved = assetRepository.save(asset);
+        applyWarranty(saved, request);
         DomainSupport.audit(auditLogRepository, appUserRepository, actor, "ASSET", saved.getId(), "CREATED", null);
         return assetResponse(saved);
     }
@@ -151,7 +166,40 @@ public class AssetService {
         } else if (request.serialNumber() != null) asset.setSerialNumber(null);
         apply(asset, request, false);
         Asset saved = assetRepository.save(asset);
+        applyWarranty(saved, request);
         DomainSupport.audit(auditLogRepository, appUserRepository, actor, "ASSET", saved.getId(), "UPDATED", null);
+        return assetResponse(saved);
+    }
+
+    @Transactional
+    public AssetResponse changeStatus(UUID id, AssetStatusChangeRequest request, AuthenticatedUser actor) {
+        Asset asset = assetRepository.findById(id).orElseThrow(() -> DomainSupport.notFound("Asset"));
+        AssetStatus target = DomainSupport.enumValue(request.status(), AssetStatus.class, null);
+        if (target == null) throw new ApiException(HttpStatus.BAD_REQUEST, "Status is required.");
+        if (!List.of(AssetStatus.AVAILABLE, AssetStatus.UNDER_MAINTENANCE, AssetStatus.IN_TRANSIT, AssetStatus.DISPOSED, AssetStatus.LOST).contains(target)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "This status cannot be selected manually.");
+        }
+        AssetStatus previous = asset.getStatus();
+        if (previous == target) return assetResponse(asset);
+        if (assignmentRepository.existsByAsset_IdAndStatus(id, AssignmentStatus.ACTIVE)) {
+            throw DomainSupport.conflict("Return the active assignment before changing this asset's status.");
+        }
+
+        if (previous == AssetStatus.UNDER_MAINTENANCE && target != AssetStatus.UNDER_MAINTENANCE) {
+            closeActiveMaintenance(asset, target == AssetStatus.AVAILABLE ? MaintenanceStatus.COMPLETED : MaintenanceStatus.CANCELLED, request.reason());
+        }
+
+        if (target == AssetStatus.UNDER_MAINTENANCE) {
+            createMaintenanceFromStatus(asset, request);
+        } else if (target == AssetStatus.DISPOSED) {
+            recordDisposal(asset, request, actor);
+        }
+
+        asset.setStatus(target);
+        if (target == AssetStatus.DISPOSED && asset.getRetirementDate() == null) asset.setRetirementDate(request.disposalDate() == null ? LocalDate.now() : request.disposalDate());
+        Asset saved = assetRepository.save(asset);
+        recordStatusEvent(saved, previous, target, request, actor);
+        DomainSupport.audit(auditLogRepository, appUserRepository, actor, "ASSET", saved.getId(), "STATUS_CHANGED", null);
         return assetResponse(saved);
     }
 
@@ -344,6 +392,111 @@ public class AssetService {
         if (asset.getId() != null && assignmentRepository.existsByAsset_IdAndStatus(asset.getId(), AssignmentStatus.ACTIVE) && asset.getStatus() != AssetStatus.ASSIGNED) throw new ApiException(HttpStatus.CONFLICT, "An asset with an active assignment must remain ASSIGNED.");
     }
 
+    private void applyWarranty(Asset asset, AssetRequest request) {
+        boolean hasWarrantyInput = request.warrantyVendorId() != null
+                || StringUtils.hasText(request.warrantyProvider())
+                || StringUtils.hasText(request.warrantyPolicyNumber())
+                || request.warrantyEndDate() != null
+                || StringUtils.hasText(request.warrantyCoverage());
+        if (!hasWarrantyInput && request.warrantyStartDate() != null) {
+            hasWarrantyInput = request.warrantyEndDate() != null
+                    || request.purchaseDate() == null
+                    || !request.warrantyStartDate().equals(request.purchaseDate());
+        }
+        if (!hasWarrantyInput) return;
+
+        LocalDate startDate = request.warrantyStartDate();
+        LocalDate endDate = request.warrantyEndDate();
+        if (startDate == null || endDate == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Warranty start and end dates are required when warranty details are provided.");
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Warranty end date cannot be before the warranty start date.");
+        }
+
+        WarrantyPolicy policy = warrantyRepository.findByAsset_IdAndCurrentTrue(asset.getId()).orElseGet(WarrantyPolicy::new);
+        policy.setAsset(asset);
+        if (request.warrantyVendorId() != null) {
+            policy.setVendor(vendorRepository.findById(request.warrantyVendorId()).orElseThrow(() -> DomainSupport.notFound("Warranty provider")));
+        } else if (StringUtils.hasText(request.warrantyProvider())) {
+            policy.setVendor(resolveVendor(null, request.warrantyProvider()));
+        } else {
+            policy.setVendor(null);
+        }
+        policy.setPolicyNumber(DomainSupport.optionalText(request.warrantyPolicyNumber()));
+        policy.setStartDate(startDate);
+        policy.setEndDate(endDate);
+        policy.setCoverage(DomainSupport.optionalText(request.warrantyCoverage()));
+        policy.setCurrent(true);
+        policy.setStatus(warrantyStatus(endDate));
+        warrantyRepository.save(policy);
+    }
+
+    private WarrantyStatus warrantyStatus(LocalDate endDate) {
+        if (endDate.isBefore(LocalDate.now())) return WarrantyStatus.EXPIRED;
+        if (!endDate.isAfter(LocalDate.now().plusDays(30))) return WarrantyStatus.EXPIRING;
+        return WarrantyStatus.ACTIVE;
+    }
+
+    private void createMaintenanceFromStatus(Asset asset, AssetStatusChangeRequest request) {
+        List<MaintenanceStatus> activeStatuses = List.of(MaintenanceStatus.OPEN, MaintenanceStatus.IN_PROGRESS, MaintenanceStatus.ON_HOLD);
+        if (!maintenanceRepository.findAllByAsset_IdAndStatusInOrderByOpenedAtDesc(asset.getId(), activeStatuses).isEmpty()) return;
+        LocalDate startDate = request.startDate() == null ? LocalDate.now() : request.startDate();
+        if (request.dueDate() != null && request.dueDate().isBefore(startDate)) throw new ApiException(HttpStatus.BAD_REQUEST, "Maintenance due date cannot be before the start date.");
+        MaintenanceTicket ticket = new MaintenanceTicket();
+        ticket.setTicketNumber("MNT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        ticket.setAsset(asset);
+        ticket.setIssue(StringUtils.hasText(request.reason()) ? request.reason().trim() : "Asset moved to maintenance");
+        ticket.setDescription(DomainSupport.optionalText(request.description()));
+        ticket.setPriority(DomainSupport.enumValue(request.priority(), MaintenancePriority.class, MaintenancePriority.MEDIUM));
+        ticket.setStatus(MaintenanceStatus.OPEN);
+        ticket.setStartDate(startDate);
+        ticket.setDueDate(request.dueDate());
+        ticket.setVendor(request.vendorId() == null ? null : vendorRepository.findById(request.vendorId()).orElseThrow(() -> DomainSupport.notFound("Vendor")));
+        ticket.setAssignedToEmployee(request.assignedToEmployeeId() == null ? null : employeeRepository.findById(request.assignedToEmployeeId()).orElseThrow(() -> DomainSupport.notFound("Employee")));
+        maintenanceRepository.save(ticket);
+    }
+
+    private void closeActiveMaintenance(Asset asset, MaintenanceStatus status, String reason) {
+        List<MaintenanceStatus> activeStatuses = List.of(MaintenanceStatus.OPEN, MaintenanceStatus.IN_PROGRESS, MaintenanceStatus.ON_HOLD);
+        maintenanceRepository.findAllByAsset_IdAndStatusInOrderByOpenedAtDesc(asset.getId(), activeStatuses).forEach(ticket -> {
+            ticket.setStatus(status);
+            if (StringUtils.hasText(reason)) ticket.setResolution(reason.trim());
+            if (status == MaintenanceStatus.COMPLETED) {
+                ticket.setCompletedAt(Instant.now());
+                if (ticket.getStartedAt() == null) ticket.setStartedAt(ticket.getCompletedAt());
+            }
+            maintenanceRepository.save(ticket);
+        });
+    }
+
+    private void recordDisposal(Asset asset, AssetStatusChangeRequest request, AuthenticatedUser actor) {
+        AssetDisposal disposal = disposalRepository.findByAsset_Id(asset.getId()).orElseGet(AssetDisposal::new);
+        disposal.setAsset(asset);
+        disposal.setDisposalDate(request.disposalDate() == null ? LocalDate.now() : request.disposalDate());
+        disposal.setDisposalMethod(StringUtils.hasText(request.disposalMethod()) ? request.disposalMethod().trim() : "OTHER");
+        disposal.setReason(DomainSupport.optionalText(request.reason()));
+        disposal.setStatus(AssetDisposalStatus.COMPLETED);
+        disposal.setProceeds(request.proceeds() == null ? BigDecimal.ZERO : request.proceeds());
+        if (disposal.getProceeds().signum() < 0) throw new ApiException(HttpStatus.BAD_REQUEST, "Proceeds cannot be negative.");
+        disposal.setCurrency("LKR");
+        disposal.setNotes(DomainSupport.optionalText(request.notes()));
+        disposal.setApprovedByUser(currentUser(actor));
+        disposalRepository.save(disposal);
+    }
+
+    private void recordStatusEvent(Asset asset, AssetStatus previous, AssetStatus target, AssetStatusChangeRequest request, AuthenticatedUser actor) {
+        AssetLifecycleEvent event = new AssetLifecycleEvent();
+        event.setAsset(asset);
+        event.setEventType("STATUS_CHANGED");
+        if (request.effectiveDate() != null) event.setEventAt(request.effectiveDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
+        event.setActorUser(currentUser(actor));
+        event.setFromStatus(previous == null ? null : previous.name());
+        event.setToStatus(target.name());
+        event.setNotes(DomainSupport.firstText(request.reason(), request.notes()));
+        lifecycleRepository.save(event);
+    }
+
     private AssetCategory resolveCategory(UUID id, String value) {
         if (id != null) return categoryRepository.findById(id).orElseThrow(() -> DomainSupport.notFound("Category"));
         return categoryRepository.findByNameIgnoreCase(value.trim()).orElseThrow(() -> DomainSupport.notFound("Category"));
@@ -376,7 +529,9 @@ public class AssetService {
         Assignment assignment = assignmentRepository.findByAsset_IdAndStatus(asset.getId(), AssignmentStatus.ACTIVE).orElse(null);
         Employee assigned = assignment == null ? null : assignment.getEmployee();
         String assignedName = assigned == null ? null : DomainSupport.fullName(assigned.getFirstName(), assigned.getLastName());
-        return new AssetResponse(asset.getId(), asset.getAssetTag(), asset.getName(), category == null ? null : category.getId(), category == null ? null : category.getName(), asset.getSerialNumber(), asset.getBrand(), asset.getModelNo(), vendor == null ? null : vendor.getId(), vendor == null ? null : vendor.getName(), location == null ? null : location.getId(), location == null ? null : location.getName(), department == null ? null : department.getId(), department == null ? null : department.getName(), asset.getStatus(), asset.getCondition(), asset.getCondition(), asset.getPurchaseDate(), asset.getPurchaseCost(), asset.getWarrantyPeriodMonths(), asset.getCurrency(), asset.getRetirementDate(), asset.getDisposalNotes(), asset.getNotes(), assigned == null ? null : assigned.getId(), assignedName, asset.getCreatedAt(), asset.getUpdatedAt());
+        WarrantyPolicy warranty = warrantyRepository.findByAsset_IdAndCurrentTrue(asset.getId()).orElse(null);
+        Vendor warrantyVendor = warranty == null ? null : warranty.getVendor();
+        return new AssetResponse(asset.getId(), asset.getAssetTag(), asset.getName(), category == null ? null : category.getId(), category == null ? null : category.getName(), asset.getSerialNumber(), asset.getBrand(), asset.getModelNo(), vendor == null ? null : vendor.getId(), vendor == null ? null : vendor.getName(), location == null ? null : location.getId(), location == null ? null : location.getName(), department == null ? null : department.getId(), department == null ? null : department.getName(), asset.getStatus(), asset.getCondition(), asset.getCondition(), asset.getPurchaseDate(), asset.getPurchaseCost(), asset.getWarrantyPeriodMonths(), warranty == null ? null : warranty.getId(), warrantyVendor == null ? null : warrantyVendor.getId(), warrantyVendor == null ? null : warrantyVendor.getName(), warranty == null ? null : warranty.getPolicyNumber(), warranty == null ? null : warranty.getStartDate(), warranty == null ? null : warranty.getEndDate(), warranty == null ? null : warranty.getCoverage(), asset.getCurrency(), asset.getRetirementDate(), asset.getDisposalNotes(), asset.getNotes(), assigned == null ? null : assigned.getId(), assignedName, asset.getCreatedAt(), asset.getUpdatedAt());
     }
 
     private AssetTransferResponse transferResponse(AssetTransfer transfer) {
@@ -396,6 +551,9 @@ public class AssetService {
     }
 
     private LifecycleEventResponse lifecycleResponse(AssetLifecycleEvent event) {
-        return new LifecycleEventResponse(event.getId(), event.getAsset().getId(), event.getEventType(), event.getEventAt(), event.getActorUser() == null ? null : event.getActorUser().getId(), event.getFromStatus(), event.getToStatus(), event.getFromLocation() == null ? null : event.getFromLocation().getId(), event.getToLocation() == null ? null : event.getToLocation().getId(), event.getAssignment() == null ? null : event.getAssignment().getId(), event.getNotes(), event.getMetadata(), event.getCreatedAt());
+        Assignment assignment = event.getAssignment();
+        Employee employee = assignment == null ? null : assignment.getEmployee();
+        if (employee == null && event.getActorUser() != null) employee = event.getActorUser().getEmployee();
+        return new LifecycleEventResponse(event.getId(), event.getAsset().getId(), event.getAsset().getAssetTag(), employee == null ? null : employee.getId(), employee == null ? null : employee.getEmployeeNumber(), event.getEventType(), event.getEventAt(), event.getActorUser() == null ? null : event.getActorUser().getId(), event.getFromStatus(), event.getToStatus(), event.getFromLocation() == null ? null : event.getFromLocation().getId(), event.getToLocation() == null ? null : event.getToLocation().getId(), assignment == null ? null : assignment.getId(), event.getNotes(), event.getMetadata(), event.getCreatedAt());
     }
 }

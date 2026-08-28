@@ -51,6 +51,7 @@ CREATE TABLE employees (
     phone             varchar(40),
     address           varchar(255),
     job_title         varchar(120),
+    branch_id         uuid,
     department_id     uuid REFERENCES departments(id),
     status            varchar(20) NOT NULL DEFAULT 'ACTIVE'
                       CHECK (status IN ('ACTIVE', 'INACTIVE', 'ON_LEAVE', 'TERMINATED')),
@@ -121,6 +122,10 @@ CREATE TABLE locations (
     created_at         timestamptz NOT NULL DEFAULT now(),
     updated_at         timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE employees
+    ADD CONSTRAINT fk_employees_branch
+    FOREIGN KEY (branch_id) REFERENCES locations(id);
 
 CREATE TABLE vendors (
     id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -195,6 +200,7 @@ CREATE TABLE assets (
     purchase_order_item_id   uuid REFERENCES purchase_order_items(id) ON DELETE SET NULL,
     purchase_date            date,
     purchase_cost            numeric(14,2) CHECK (purchase_cost IS NULL OR purchase_cost >= 0),
+    warranty_period_months   integer CHECK (warranty_period_months IS NULL OR warranty_period_months >= 0),
     currency                 char(3) NOT NULL DEFAULT 'USD',
     location_id              uuid REFERENCES locations(id) ON DELETE SET NULL,
     department_id            uuid REFERENCES departments(id) ON DELETE SET NULL,
@@ -220,6 +226,7 @@ CREATE TABLE assignments (
     status                varchar(20) NOT NULL DEFAULT 'ACTIVE'
                           CHECK (status IN ('ACTIVE', 'RETURNED', 'TRANSFERRED', 'CANCELLED')),
     handover_notes        text,
+    closing_reason        text,
     created_at            timestamptz NOT NULL DEFAULT now(),
     CHECK (returned_at IS NULL OR returned_at >= assigned_at),
     UNIQUE (id, asset_id, employee_id)
@@ -1018,4 +1025,3 @@ VALUES (1)
 ON CONFLICT (id) DO NOTHING;
 
 COMMIT;
-

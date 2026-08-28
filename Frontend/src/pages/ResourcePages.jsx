@@ -2,12 +2,14 @@ import { ResourcePage } from '../components/domain/ResourcePage';
 import { DetailsPage } from '../components/domain/DetailsPage';
 import { resourceConfigs } from '../constants/resourceConfigs';
 import { AssetsPage } from './AssetsPage';
+import { EmployeesPage } from './EmployeesPage';
 import { WarrantyPage } from './WarrantyPage';
+import { MaintenancePage } from './MaintenancePage';
 export { AssignmentsPage } from './AssignmentsPage';
 
 export { AssetsPage };
-export const EmployeesPage = () => <ResourcePage config={resourceConfigs.employees} />;
-export const MaintenancePage = () => <ResourcePage config={resourceConfigs.maintenance} />;
+export { EmployeesPage };
+export { MaintenancePage };
 export { WarrantyPage };
 export const VendorsPage = () => <ResourcePage config={resourceConfigs.vendors} />;
 export const LicensesPage = () => <ResourcePage config={resourceConfigs.licenses} />;
