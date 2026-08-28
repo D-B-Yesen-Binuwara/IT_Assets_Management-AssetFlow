@@ -3,6 +3,7 @@ import { Card, CardHeader } from '../components/common/Card';
 import { PageHeader } from '../components/common/PageHeader';
 import { StatCard } from '../components/common/StatCard';
 import { Table } from '../components/common/Table';
+import { Link } from 'react-router-dom';
 import { useResource } from '../hooks/useResource';
 import { dashboardService } from '../services/resources';
 import { collectionItems } from '../utils/collections';
@@ -46,6 +47,8 @@ function DistributionCard({ title, values = {} }) {
 }
 
 const activityColumns = [
+  { key: 'assetTag', label: 'Asset tag', value: (row) => row.assetTag || '\u2014', render: (row) => row.assetTag && row.assetId ? <Link className="table-record-link" to={`/assets/${row.assetId}`}>{row.assetTag}</Link> : '\u2014' },
+  { key: 'employeeNumber', label: 'Employee ID', value: (row) => row.employeeNumber || '\u2014', render: (row) => row.employeeNumber && row.employeeId ? <Link className="table-record-link" to={`/employees/${row.employeeId}`}>{row.employeeNumber}</Link> : '\u2014' },
   { key: 'eventType', label: 'Event', value: (row) => row.eventType || '\u2014' },
   { key: 'eventAt', label: 'Time', value: (row) => row.eventAt ? new Date(row.eventAt).toLocaleString() : '\u2014' },
   { key: 'fromStatus', label: 'From', value: (row) => row.fromStatus || '\u2014' },

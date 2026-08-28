@@ -396,6 +396,9 @@ public class AssetService {
     }
 
     private LifecycleEventResponse lifecycleResponse(AssetLifecycleEvent event) {
-        return new LifecycleEventResponse(event.getId(), event.getAsset().getId(), event.getEventType(), event.getEventAt(), event.getActorUser() == null ? null : event.getActorUser().getId(), event.getFromStatus(), event.getToStatus(), event.getFromLocation() == null ? null : event.getFromLocation().getId(), event.getToLocation() == null ? null : event.getToLocation().getId(), event.getAssignment() == null ? null : event.getAssignment().getId(), event.getNotes(), event.getMetadata(), event.getCreatedAt());
+        Assignment assignment = event.getAssignment();
+        Employee employee = assignment == null ? null : assignment.getEmployee();
+        if (employee == null && event.getActorUser() != null) employee = event.getActorUser().getEmployee();
+        return new LifecycleEventResponse(event.getId(), event.getAsset().getId(), event.getAsset().getAssetTag(), employee == null ? null : employee.getId(), employee == null ? null : employee.getEmployeeNumber(), event.getEventType(), event.getEventAt(), event.getActorUser() == null ? null : event.getActorUser().getId(), event.getFromStatus(), event.getToStatus(), event.getFromLocation() == null ? null : event.getFromLocation().getId(), event.getToLocation() == null ? null : event.getToLocation().getId(), assignment == null ? null : assignment.getId(), event.getNotes(), event.getMetadata(), event.getCreatedAt());
     }
 }

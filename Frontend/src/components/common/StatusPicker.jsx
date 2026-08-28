@@ -6,6 +6,7 @@ import { StatusBadge } from './StatusBadge';
 export function StatusPicker({ value, options, onChange, label = 'Change status', disabled = false }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState(null);
+  const [portalRoot, setPortalRoot] = useState(null);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -14,7 +15,16 @@ export function StatusPicker({ value, options, onChange, label = 'Change status'
     if (disabled) return;
     if (open) return close();
     const rect = triggerRef.current?.getBoundingClientRect();
-    if (rect) setPosition({ top: rect.bottom + 6, left: rect.left });
+    if (rect) {
+      const menuWidth = 214;
+      const menuHeight = Math.min(360, 40 + options.length * 39);
+      const top = rect.bottom + menuHeight + 6 <= window.innerHeight
+        ? rect.bottom + 6
+        : Math.max(8, rect.top - menuHeight - 6);
+      const left = Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - menuWidth - 8));
+      setPosition({ top, left });
+    }
+    setPortalRoot(triggerRef.current?.closest('.app-shell') || document.body);
     setOpen(true);
   };
 
@@ -23,12 +33,20 @@ export function StatusPicker({ value, options, onChange, label = 'Change status'
     const onPointerDown = (event) => {
       if (!triggerRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) close();
     };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        close();
+        triggerRef.current?.focus();
+      }
+    };
     const onViewportChange = () => close();
     document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
     window.addEventListener('resize', onViewportChange);
     window.addEventListener('scroll', onViewportChange, true);
     return () => {
       document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('resize', onViewportChange);
       window.removeEventListener('scroll', onViewportChange, true);
     };
@@ -54,7 +72,7 @@ export function StatusPicker({ value, options, onChange, label = 'Change status'
         <StatusBadge status={value} />
         <Icon name="chevronDown" size={13} className="status-picker-chevron" />
       </button>
-      {open && position && createPortal(
+      {open && position && portalRoot && createPortal(
         <div ref={menuRef} className="status-picker-menu" role="menu" style={position}>
           <p>Status</p>
           {options.map((option) => (
@@ -67,10 +85,11 @@ export function StatusPicker({ value, options, onChange, label = 'Change status'
               onClick={() => choose(option.value)}
             >
               <StatusBadge status={option.value} />
+              {option.value === value && <Icon name="check" size={14} className="status-picker-check" />}
             </button>
           ))}
         </div>,
-        document.body,
+        portalRoot,
       )}
     </span>
   );

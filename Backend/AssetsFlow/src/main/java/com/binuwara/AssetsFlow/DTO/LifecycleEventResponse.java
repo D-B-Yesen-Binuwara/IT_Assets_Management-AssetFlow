@@ -6,6 +6,9 @@ import java.util.UUID;
 public record LifecycleEventResponse(
         UUID id,
         UUID assetId,
+        String assetTag,
+        UUID employeeId,
+        String employeeNumber,
         String eventType,
         Instant eventAt,
         UUID actorUserId,

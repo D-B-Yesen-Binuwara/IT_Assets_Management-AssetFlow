@@ -2,6 +2,9 @@ const tone = (status = '') => {
   const value = String(status).toLowerCase().trim().replace(/[-\s]+/g, '_');
   const tones = {
     active: 'info',
+    inactive: 'slate',
+    on_leave: 'amber',
+    terminated: 'danger',
     assigned: 'indigo',
     available: 'success',
     approved: 'success',
