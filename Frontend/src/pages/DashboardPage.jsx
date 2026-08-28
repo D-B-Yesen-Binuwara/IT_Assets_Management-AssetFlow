@@ -9,18 +9,18 @@ import { dashboardService } from '../services/resources';
 import { collectionItems } from '../utils/collections';
 
 const stats = [
-  ['Total assets', 'totalAssets', 'assets', 'indigo', 'Across all categories'],
-  ['Available', 'availableAssets', 'assets', 'green', 'Ready to deploy'],
-  ['Assigned', 'assignedAssets', 'transfer', 'blue', 'In active use'],
-  ['Under maintenance', 'assetsUnderMaintenance', 'wrench', 'amber', 'Being serviced'],
-  ['Retired / disposed', 'retiredOrDisposedAssets', 'assets', 'slate', 'End of lifecycle'],
-  ['Warranty expiring', 'warrantiesExpiring', 'shield', 'rose', 'Within 60 days'],
-  ['Total asset value', 'totalAssetValue', 'chart', 'violet', 'Current book value'],
-  ['Departments', 'departments', 'building', 'cyan', 'Organization structure'],
+  ['Total assets', 'totalAssets', 'assets', 'indigo', 'Across all categories', '/assets'],
+  ['Available', 'availableAssets', 'assets', 'green', 'Ready to deploy', '/assets'],
+  ['Assigned', 'assignedAssets', 'transfer', 'blue', 'In active use', '/assignments'],
+  ['Under maintenance', 'assetsUnderMaintenance', 'wrench', 'amber', 'Being serviced', '/maintenance'],
+  ['Retired / disposed', 'retiredOrDisposedAssets', 'assets', 'slate', 'End of lifecycle', '/assets'],
+  ['Warranty expiring', 'warrantiesExpiring', 'shield', 'rose', 'Within 60 days', '/warranty'],
+  ['Total asset value', 'totalAssetValue', 'chart', 'violet', 'Current book value', '/assets'],
+  ['Departments', 'departments', 'building', 'cyan', 'Organization structure', '/employees'],
 ];
 
 const formatNumber = (value) => (value === undefined || value === null ? '\u2014' : Number(value).toLocaleString());
-const formatMoney = (value) => (value === undefined || value === null ? '\u2014' : Number(value).toLocaleString(undefined, { style: 'currency', currency: 'USD' }));
+const formatMoney = (value) => (value === undefined || value === null ? '\u2014' : `Rs ${Number(value).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 
 function DistributionCard({ title, values = {} }) {
   const entries = Object.entries(values);
@@ -77,13 +77,14 @@ export function DashboardPage() {
       />
 
       <div className="stats-grid">
-        {stats.map(([label, key, icon, tone, helper]) => (
+        {stats.map(([label, key, icon, tone, helper, to]) => (
           <StatCard
             key={label}
             label={label}
             icon={icon}
             tone={tone}
             helper={helper}
+            to={to}
             value={key === 'totalAssetValue' ? formatMoney(summary[key]) : formatNumber(summary[key])}
           />
         ))}

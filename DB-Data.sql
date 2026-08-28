@@ -314,7 +314,7 @@ VALUES
         (SELECT id FROM asset_categories WHERE name = 'Laptops'), 'TSL-LAT-7440-0001', 'Dell', 'Latitude 7440',
         (SELECT id FROM vendors WHERE vendor_code = 'VEN-TECH'),
         (SELECT item.id FROM purchase_order_items item JOIN purchase_orders po ON po.id = item.purchase_order_id WHERE po.po_number = 'PO-2026-0001' AND item.description = 'Dell Latitude 7440 laptop'),
-        '2026-01-20', 900.00, 'USD',
+        '2026-01-20', 900.00, 'LKR',
         (SELECT id FROM locations WHERE code = 'HQ-2F'),
         (SELECT id FROM departments WHERE code = 'IT'), 'ASSIGNED', 'NEW', NULL, NULL,
         'Primary development laptop.'
@@ -324,7 +324,7 @@ VALUES
         (SELECT id FROM asset_categories WHERE name = 'Laptops'), 'TSL-LAT-7440-0002', 'Dell', 'Latitude 7440',
         (SELECT id FROM vendors WHERE vendor_code = 'VEN-TECH'),
         (SELECT item.id FROM purchase_order_items item JOIN purchase_orders po ON po.id = item.purchase_order_id WHERE po.po_number = 'PO-2026-0001' AND item.description = 'Dell Latitude 7440 laptop'),
-        '2026-01-20', 900.00, 'USD',
+        '2026-01-20', 900.00, 'LKR',
         (SELECT id FROM locations WHERE code = 'NORTH-WH'),
         (SELECT id FROM departments WHERE code = 'FIN'), 'AVAILABLE', 'GOOD', NULL, NULL,
         'Available spare laptop.'
@@ -334,7 +334,7 @@ VALUES
         (SELECT id FROM asset_categories WHERE name = 'Monitors'), 'TSL-U2723-0001', 'Dell', 'U2723QE',
         (SELECT id FROM vendors WHERE vendor_code = 'VEN-TECH'),
         (SELECT item.id FROM purchase_order_items item JOIN purchase_orders po ON po.id = item.purchase_order_id WHERE po.po_number = 'PO-2026-0001' AND item.description = 'Dell UltraSharp 27-inch monitor'),
-        '2026-01-20', 275.00, 'USD',
+        '2026-01-20', 275.00, 'LKR',
         (SELECT id FROM locations WHERE code = 'HQ-2F'),
         (SELECT id FROM departments WHERE code = 'IT'), 'AVAILABLE', 'GOOD', NULL, NULL,
         'Shared monitor for the technology team.'
@@ -343,7 +343,7 @@ VALUES
         'AST-NET-0001', 'Warehouse Network Switch',
         (SELECT id FROM asset_categories WHERE name = 'Network Equipment'), 'NSS-SW-2401', 'Cisco', 'CBS350-24T-4G',
         (SELECT id FROM vendors WHERE vendor_code = 'VEN-NET'), NULL,
-        '2025-10-01', 850.00, 'USD',
+        '2025-10-01', 850.00, 'LKR',
         (SELECT id FROM locations WHERE code = 'NORTH-WH'),
         (SELECT id FROM departments WHERE code = 'IT'), 'UNDER_MAINTENANCE', 'FAIR', NULL, NULL,
         'Awaiting replacement fan assembly.'
@@ -352,7 +352,7 @@ VALUES
         'AST-LAP-0003', 'Retired Laptop',
         (SELECT id FROM asset_categories WHERE name = 'Laptops'), 'TSL-LAT-5420-0001', 'Dell', 'Latitude 5420',
         (SELECT id FROM vendors WHERE vendor_code = 'VEN-TECH'), NULL,
-        '2022-04-12', 1100.00, 'USD',
+        '2022-04-12', 1100.00, 'LKR',
         (SELECT id FROM locations WHERE code = 'NORTH-WH'),
         (SELECT id FROM departments WHERE code = 'FIN'), 'DISPOSED', 'POOR', '2025-12-20',
         'Recycled after board failure.', 'Historical disposal example.'
@@ -361,7 +361,7 @@ VALUES
         'AST-OFF-0001', 'Ergonomic Office Chair',
         (SELECT id FROM asset_categories WHERE name = 'Office Equipment'), 'OH-CHAIR-0001', 'ErgoWorks', 'E500',
         (SELECT id FROM vendors WHERE vendor_code = 'VEN-OFFICE'), NULL,
-        '2025-06-10', 220.00, 'USD',
+        '2025-06-10', 220.00, 'LKR',
         (SELECT id FROM locations WHERE code = 'NORTH-WH'),
         (SELECT id FROM departments WHERE code = 'OPS'), 'AVAILABLE', 'GOOD', NULL, NULL,
         'Warehouse spare.'
@@ -371,7 +371,7 @@ VALUES
         (SELECT id FROM asset_categories WHERE name = 'Network Equipment'), 'NSS-AP-0002', 'Ubiquiti', 'U6-LR',
         (SELECT id FROM vendors WHERE vendor_code = 'VEN-NET'),
         (SELECT item.id FROM purchase_order_items item JOIN purchase_orders po ON po.id = item.purchase_order_id WHERE po.po_number = 'PO-2026-0002' AND item.description = 'Managed 24-port network switch'),
-        '2026-08-05', 600.00, 'USD',
+        '2026-08-05', 600.00, 'LKR',
         (SELECT id FROM locations WHERE code = 'NORTH-WH'),
         (SELECT id FROM departments WHERE code = 'IT'), 'IN_TRANSIT', 'NEW', NULL, NULL,
         'Expected with the warehouse network order.'
@@ -449,16 +449,16 @@ WHERE claim_number = 'CLM-2025-0004';
 INSERT INTO maintenance_tickets (
     ticket_number, asset_id, requested_by_employee_id,
     assigned_to_employee_id, vendor_id, issue, description, priority,
-    status, opened_at, due_date, started_at, cost, resolution
+    status, opened_at, start_date, due_date, started_at, cost, resolution
 )
 SELECT seed.ticket_number, asset.id, requester.id, assignee.id, vendor.id,
        seed.issue, seed.description, seed.priority, seed.status,
-       seed.opened_at, seed.due_date, seed.started_at, seed.cost, seed.resolution
+       seed.opened_at, seed.start_date, seed.due_date, seed.started_at, seed.cost, seed.resolution
 FROM (
     VALUES
-        ('MT-2026-0001', 'AST-NET-0001', 'EMP-0002', 'EMP-0004', 'VEN-NET', 'Network switch overheating', 'The warehouse switch is reporting repeated temperature alerts.', 'HIGH', 'IN_PROGRESS', TIMESTAMPTZ '2026-08-10 09:15:00+05:30', DATE '2026-08-28', TIMESTAMPTZ '2026-08-11 10:00:00+05:30', 150.00::numeric, NULL::text),
-        ('MT-2026-0002', 'AST-MON-0001', 'EMP-0001', 'EMP-0004', 'VEN-TECH', 'Monitor flickering', 'Display cable and power board were inspected.', 'MEDIUM', 'COMPLETED', TIMESTAMPTZ '2026-05-01 09:15:00+05:30', DATE '2026-05-10', TIMESTAMPTZ '2026-05-02 10:00:00+05:30', 75.00::numeric, 'Power board replaced and monitor returned to inventory.')
-) AS seed(ticket_number, asset_tag, requester_number, assignee_number, vendor_code, issue, description, priority, status, opened_at, due_date, started_at, cost, resolution)
+        ('MT-2026-0001', 'AST-NET-0001', 'EMP-0002', 'EMP-0004', 'VEN-NET', 'Network switch overheating', 'The warehouse switch is reporting repeated temperature alerts.', 'HIGH', 'IN_PROGRESS', TIMESTAMPTZ '2026-08-10 09:15:00+05:30', DATE '2026-08-10', DATE '2026-08-28', TIMESTAMPTZ '2026-08-11 10:00:00+05:30', 150.00::numeric, NULL::text),
+        ('MT-2026-0002', 'AST-MON-0001', 'EMP-0001', 'EMP-0004', 'VEN-TECH', 'Monitor flickering', 'Display cable and power board were inspected.', 'MEDIUM', 'COMPLETED', TIMESTAMPTZ '2026-05-01 09:15:00+05:30', DATE '2026-05-01', DATE '2026-05-10', TIMESTAMPTZ '2026-05-02 10:00:00+05:30', 75.00::numeric, 'Power board replaced and monitor returned to inventory.')
+) AS seed(ticket_number, asset_tag, requester_number, assignee_number, vendor_code, issue, description, priority, status, opened_at, start_date, due_date, started_at, cost, resolution)
 JOIN assets asset ON asset.asset_tag = seed.asset_tag
 JOIN employees requester ON requester.employee_number = seed.requester_number
 JOIN employees assignee ON assignee.employee_number = seed.assignee_number
@@ -566,7 +566,7 @@ WHERE NOT EXISTS (
 INSERT INTO system_settings (setting_key, setting_value, updated_by)
 VALUES
     ('dashboard.refresh_interval_seconds', '60'::jsonb, (SELECT id FROM app_users WHERE username = 'asset.admin')),
-    ('asset.default_currency', '"USD"'::jsonb, (SELECT id FROM app_users WHERE username = 'asset.admin')),
+    ('asset.default_currency', '"LKR"'::jsonb, (SELECT id FROM app_users WHERE username = 'asset.admin')),
     ('notifications.email_enabled', 'true'::jsonb, (SELECT id FROM app_users WHERE username = 'asset.admin'))
 ON CONFLICT (setting_key) DO UPDATE
 SET setting_value = EXCLUDED.setting_value,
@@ -579,7 +579,7 @@ INSERT INTO organization_settings (
 )
 VALUES (
     1, 'AssetFlow Demo Organization', 'Technology Services', 'admin@assetflow.test',
-    'USD', 'Asia/Colombo',
+    'LKR', 'Asia/Colombo',
     '{"primaryColor":"#1d4ed8","logoUrl":null}'::jsonb,
     '{"maintenanceAlerts":true,"warrantyAlerts":true,"assignmentAlerts":true}'::jsonb,
     (SELECT id FROM app_users WHERE username = 'asset.admin')

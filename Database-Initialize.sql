@@ -201,7 +201,7 @@ CREATE TABLE assets (
     purchase_date            date,
     purchase_cost            numeric(14,2) CHECK (purchase_cost IS NULL OR purchase_cost >= 0),
     warranty_period_months   integer CHECK (warranty_period_months IS NULL OR warranty_period_months >= 0),
-    currency                 char(3) NOT NULL DEFAULT 'USD',
+    currency                 char(3) NOT NULL DEFAULT 'LKR',
     location_id              uuid REFERENCES locations(id) ON DELETE SET NULL,
     department_id            uuid REFERENCES departments(id) ON DELETE SET NULL,
     status                   varchar(25) NOT NULL DEFAULT 'AVAILABLE'
@@ -291,6 +291,7 @@ CREATE TABLE maintenance_tickets (
     status                   varchar(20) NOT NULL DEFAULT 'OPEN'
                              CHECK (status IN ('OPEN', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED')),
     opened_at                timestamptz NOT NULL DEFAULT now(),
+    start_date               date NOT NULL DEFAULT current_date,
     due_date                 date,
     started_at               timestamptz,
     completed_at             timestamptz,
@@ -298,7 +299,8 @@ CREATE TABLE maintenance_tickets (
     resolution               text,
     created_at               timestamptz NOT NULL DEFAULT now(),
     updated_at               timestamptz NOT NULL DEFAULT now(),
-    CHECK (completed_at IS NULL OR completed_at >= opened_at)
+    CHECK (completed_at IS NULL OR completed_at >= opened_at),
+    CONSTRAINT chk_maintenance_due_after_start CHECK (due_date IS NULL OR due_date >= start_date)
 );
 
 -- ============================================================================
@@ -379,7 +381,7 @@ CREATE TABLE organization_settings (
     organization_name     varchar(180) NOT NULL DEFAULT 'AssetFlow',
     industry              varchar(120),
     primary_contact       varchar(180),
-    currency              char(3) NOT NULL DEFAULT 'USD',
+    currency              char(3) NOT NULL DEFAULT 'LKR',
     timezone              varchar(80) NOT NULL DEFAULT 'UTC',
     branding              jsonb NOT NULL DEFAULT '{}'::jsonb,
     notification_settings jsonb NOT NULL DEFAULT '{}'::jsonb,
