@@ -4,11 +4,12 @@ import { resourceConfigs } from '../constants/resourceConfigs';
 import { AssetsPage } from './AssetsPage';
 import { EmployeesPage } from './EmployeesPage';
 import { WarrantyPage } from './WarrantyPage';
+import { MaintenancePage } from './MaintenancePage';
 export { AssignmentsPage } from './AssignmentsPage';
 
 export { AssetsPage };
 export { EmployeesPage };
-export const MaintenancePage = () => <ResourcePage config={resourceConfigs.maintenance} />;
+export { MaintenancePage };
 export { WarrantyPage };
 export const VendorsPage = () => <ResourcePage config={resourceConfigs.vendors} />;
 export const LicensesPage = () => <ResourcePage config={resourceConfigs.licenses} />;

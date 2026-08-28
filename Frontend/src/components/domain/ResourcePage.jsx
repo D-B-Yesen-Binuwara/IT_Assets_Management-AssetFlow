@@ -2,22 +2,34 @@ import { useState } from 'react';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { Icon } from '../common/Icon';
+import { IconActionButton } from '../common/IconActionButton';
 import { BackendForm, Modal } from '../common/Modal';
 import { PageHeader } from '../common/PageHeader';
 import { StatCard } from '../common/StatCard';
 import { Table } from '../common/Table';
 import { useAction, useResource } from '../../hooks/useResource';
 import { collectionItems } from '../../utils/collections';
+import { RecordDetailsModal } from './RecordDetailsModal';
 
 export function ResourcePage({ config }) {
   const resource = useResource(() => config.service.list(), 'list');
   const [modalOpen, setModalOpen] = useState(false);
+  const [detailsRecord, setDetailsRecord] = useState(null);
   const createAction = useAction(config.service.create);
   const rows = collectionItems(resource.data);
   const stats = config.stats.map((stat) => ({
     ...stat,
     value: stat.getValue ? stat.getValue(rows) : '\u2014',
   }));
+  const columns = config.columns.map((column) => column.key === config.infoColumn ? {
+    ...column,
+    render: (row) => (
+      <span className="asset-tag-cell">
+        <IconActionButton icon="info" className="asset-info-action" label={`View details for ${column.value(row)}`} onClick={() => setDetailsRecord(row)} />
+        <span>{column.render ? column.render(row) : column.value(row)}</span>
+      </span>
+    ),
+  } : column);
 
   const submit = async (payload) => {
     try {
@@ -74,7 +86,7 @@ export function ResourcePage({ config }) {
 
       <Card className="table-wrap">
         <Table
-          columns={config.columns}
+          columns={columns}
           rows={rows}
           status={resource.status}
           error={resource.error}
@@ -105,6 +117,14 @@ export function ResourcePage({ config }) {
           </div>
         )}
       </Modal>
+
+      <RecordDetailsModal
+        record={detailsRecord}
+        title={detailsRecord ? config.columns.find((column) => column.key === config.infoColumn)?.value(detailsRecord) : ''}
+        description={`Full ${config.singular} record.`}
+        fields={config.detailFields || config.columns.map((column) => [column.key, column.label])}
+        onClose={() => setDetailsRecord(null)}
+      />
     </div>
   );
 }

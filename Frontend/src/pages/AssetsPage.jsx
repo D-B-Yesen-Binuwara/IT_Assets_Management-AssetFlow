@@ -11,13 +11,14 @@ import { StatusPicker } from '../components/common/StatusPicker';
 import { Table } from '../components/common/Table';
 import { AssetDetailsModal } from '../components/domain/AssetDetailsModal';
 import { AssetForm } from '../components/domain/AssetForm';
+import { AssetStatusChangeModal } from '../components/domain/AssetStatusChangeModal';
 import { resourceConfigs } from '../constants/resourceConfigs';
 import { useResource } from '../hooks/useResource';
-import { assetService, categoryService, departmentService, locationService, vendorService } from '../services/resources';
+import { assetService, categoryService, departmentService, employeeService, locationService, vendorService, warrantyService } from '../services/resources';
 import { collectionItems, recordId } from '../utils/collections';
 
 const config = resourceConfigs.assets;
-const idleLookup = { status: 'idle', categories: [], departments: [], vendors: [], locations: [], assets: [], error: null };
+const idleLookup = { status: 'idle', categories: [], departments: [], vendors: [], locations: [], assets: [], employees: [], error: null };
 const editableStatuses = [
   { value: 'AVAILABLE', label: 'Available' },
   { value: 'UNDER_MAINTENANCE', label: 'Maintenance' },
@@ -33,6 +34,7 @@ export function AssetsPage() {
   const [detailsAsset, setDetailsAsset] = useState(null);
   const [detailsVendor, setDetailsVendor] = useState(null);
   const [deleteAsset, setDeleteAsset] = useState(null);
+  const [statusModal, setStatusModal] = useState({ asset: null, status: null });
   const [mutation, setMutation] = useState({ status: 'idle', error: null });
   const [statusAction, setStatusAction] = useState({ status: 'idle', error: null });
   const rows = collectionItems(resource.data);
@@ -74,7 +76,7 @@ export function AssetsPage() {
       render: (row) => {
         const value = String(row.status || '').toUpperCase();
         if (!editableStatuses.some((status) => status.value === value)) return <StatusBadge status={row.status} />;
-        return <StatusPicker value={value} options={editableStatuses} label={`Change status for ${row.assetTag || row.name || 'asset'}`} disabled={statusAction.status === 'loading'} onChange={(status) => changeStatus(row, status)} />;
+        return <StatusPicker value={value} options={editableStatuses} label={`Change status for ${row.assetTag || row.name || 'asset'}`} disabled={statusAction.status === 'loading'} onChange={(status) => openStatusChange(row, status)} />;
       },
     };
   });
@@ -82,8 +84,8 @@ export function AssetsPage() {
   const loadLookups = async () => {
     setLookup({ ...idleLookup, status: 'loading' });
     try {
-      const [categoryData, departmentData, vendorData, locationData, assetData] = await Promise.all([
-        categoryService.list(), departmentService.list(), vendorService.list(), locationService.list(), assetService.list(),
+      const [categoryData, departmentData, vendorData, locationData, assetData, employeeData] = await Promise.all([
+        categoryService.list(), departmentService.list(), vendorService.list(), locationService.list(), assetService.list(), employeeService.list(),
       ]);
       setLookup({
         status: 'success',
@@ -92,6 +94,7 @@ export function AssetsPage() {
         vendors: collectionItems(vendorData),
         locations: collectionItems(locationData),
         assets: collectionItems(assetData),
+        employees: collectionItems(employeeData),
         error: null,
       });
     } catch (error) {
@@ -125,15 +128,44 @@ export function AssetsPage() {
         });
         departmentId = recordId(department, 'id');
       }
+      const assetOnlyKeys = new Set([
+        'newCategoryName', 'newDepartmentName', 'newDepartmentCode', 'newBrand',
+        'warrantyId', 'warrantyVendorId', 'warrantyPolicyNumber', 'warrantyStartDate', 'warrantyEndDate', 'warrantyCoverage',
+        'statusReason', 'statusDescription', 'statusEffectiveDate', 'maintenancePriority', 'maintenanceStartDate',
+        'maintenanceDueDate', 'maintenanceVendorId', 'maintenanceAssignedToEmployeeId', 'disposalDate',
+        'disposalMethod', 'disposalProceeds', 'statusNotes', 'status',
+      ]);
       const request = {
         ...Object.fromEntries(
-          Object.entries(form).filter(([key]) => !['newCategoryName', 'newDepartmentName', 'newDepartmentCode', 'newBrand'].includes(key)),
+          Object.entries(form).filter(([key]) => !assetOnlyKeys.has(key)),
         ),
         categoryId,
         departmentId: departmentId || null,
+        currency: 'LKR',
       };
-      if (formState.asset) await assetService.update(recordId(formState.asset, 'id'), request);
-      else await assetService.create(request);
+      const savedAsset = formState.asset
+        ? await assetService.update(recordId(formState.asset, 'id'), request)
+        : await assetService.create({ ...request, status: 'AVAILABLE' });
+      const assetId = recordId(savedAsset, 'id');
+      const hasWarranty = [form.warrantyVendorId, form.warrantyPolicyNumber, form.warrantyStartDate, form.warrantyEndDate, form.warrantyCoverage]
+        .some((entry) => entry !== null && entry !== undefined && String(entry).trim() !== '');
+      if (hasWarranty) {
+        const warrantyRequest = {
+          assetId,
+          vendorId: form.warrantyVendorId || null,
+          policyNumber: form.warrantyPolicyNumber || null,
+          startDate: form.warrantyStartDate || null,
+          endDate: form.warrantyEndDate || null,
+          coverage: form.warrantyCoverage || null,
+          current: true,
+        };
+        if (form.warrantyId) await warrantyService.update(form.warrantyId, warrantyRequest);
+        else await warrantyService.create(warrantyRequest);
+      }
+      const previousStatus = formState.asset?.status || 'AVAILABLE';
+      if (form.status !== previousStatus) {
+        await assetService.changeStatus(assetId, statusRequest(form.status, form));
+      }
       setMutation({ status: 'success', error: null });
       setFormState({ open: false, asset: null });
       resource.reload();
@@ -142,11 +174,20 @@ export function AssetsPage() {
     }
   };
 
-  const changeStatus = async (asset, status) => {
+  const openStatusChange = (asset, status) => {
+    setStatusAction({ status: 'idle', error: null });
+    setStatusModal({ asset, status });
+    if (lookup.status !== 'success') loadLookups();
+  };
+
+  const changeStatus = async (details) => {
+    const { asset, status } = statusModal;
+    if (!asset || !status) return;
     setStatusAction({ status: 'loading', error: null });
     try {
-      await assetService.update(recordId(asset, 'id'), { status });
+      await assetService.changeStatus(recordId(asset, 'id'), statusRequest(status, details));
       setStatusAction({ status: 'success', error: null });
+      setStatusModal({ asset: null, status: null });
       resource.reload();
     } catch (error) {
       setStatusAction({ status: 'error', error });
@@ -210,6 +251,7 @@ export function AssetsPage() {
             vendors={lookup.vendors}
             locations={lookup.locations}
             assets={lookup.assets}
+            employees={lookup.employees}
             submitting={mutation.status === 'loading'}
             actionError={mutation.status === 'error' ? mutation.error : null}
             onClose={closeForm}
@@ -219,6 +261,17 @@ export function AssetsPage() {
       </Modal>
 
       <AssetDetailsModal asset={detailsAsset} vendor={detailsVendor} onClose={() => { setDetailsAsset(null); setDetailsVendor(null); }} />
+
+      <AssetStatusChangeModal
+        asset={statusModal.asset}
+        status={statusModal.status}
+        vendors={lookup.vendors}
+        employees={lookup.employees}
+        submitting={statusAction.status === 'loading'}
+        error={statusAction.status === 'error' ? statusAction.error : null}
+        onClose={() => statusAction.status !== 'loading' && setStatusModal({ asset: null, status: null })}
+        onSubmit={changeStatus}
+      />
 
       <Modal open={Boolean(deleteAsset)} onClose={() => mutation.status !== 'loading' && setDeleteAsset(null)} title="Retire asset" description="This removes the asset from active inventory by marking it retired. Its history stays available for audit.">
         <div className="confirm-copy">Are you sure you want to retire <strong>{deleteAsset?.assetTag || deleteAsset?.name}</strong>?</div>
@@ -230,4 +283,22 @@ export function AssetsPage() {
       </Modal>
     </div>
   );
+}
+
+function statusRequest(status, form) {
+  return {
+    status,
+    reason: form.statusReason || null,
+    description: form.statusDescription || null,
+    effectiveDate: form.statusEffectiveDate || null,
+    priority: form.maintenancePriority || null,
+    startDate: form.maintenanceStartDate || null,
+    dueDate: form.maintenanceDueDate || null,
+    vendorId: form.maintenanceVendorId || null,
+    assignedToEmployeeId: form.maintenanceAssignedToEmployeeId || null,
+    disposalDate: form.disposalDate || null,
+    disposalMethod: form.disposalMethod || null,
+    proceeds: form.disposalProceeds === '' ? null : Number(form.disposalProceeds),
+    notes: form.statusNotes || null,
+  };
 }

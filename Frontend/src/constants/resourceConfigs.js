@@ -52,8 +52,8 @@ export const resourceConfigs = {
     stats: [
       { label: 'Total assets', icon: 'assets', tone: 'indigo', getValue: (rows) => rows.length },
       { label: 'Available', icon: 'assets', tone: 'green', getValue: (rows) => rows.filter((row) => row.status === 'AVAILABLE').length },
-      { label: 'Assigned', icon: 'transfer', tone: 'blue', getValue: (rows) => rows.filter((row) => row.status === 'ASSIGNED').length },
-      { label: 'Maintenance', icon: 'wrench', tone: 'amber', getValue: (rows) => rows.filter((row) => row.status === 'UNDER_MAINTENANCE').length },
+      { label: 'Assigned', icon: 'transfer', tone: 'blue', to: '/assignments', getValue: (rows) => rows.filter((row) => row.status === 'ASSIGNED').length },
+      { label: 'Maintenance', icon: 'wrench', tone: 'amber', to: '/maintenance', getValue: (rows) => rows.filter((row) => row.status === 'UNDER_MAINTENANCE').length },
     ],
     columns: [
       value('assetTag', 'Asset tag'),
@@ -164,6 +164,12 @@ export const resourceConfigs = {
     icon: 'shield',
     service: warrantyService,
     description: 'Monitor warranty status, expirations, and claims across assets.',
+    infoColumn: 'assetTag',
+    detailFields: [
+      ['assetTag', 'Asset tag'], ['assetName', 'Asset Name'], ['provider', 'Warranty provider'],
+      ['policyNumber', 'Policy code'], ['startDate', 'Warranty start date'], ['endDate', 'Warranty end date'],
+      ['coverage', 'Coverage'], ['status', 'Status'], ['current', 'Current policy'], ['claimCount', 'Claims filed'],
+    ],
     chart: {
       title: 'Warranty expiry timeline',
       description: 'Assets grouped by remaining warranty period.',
@@ -178,7 +184,7 @@ export const resourceConfigs = {
       value('assetTag', 'Asset tag'),
       value('assetName', 'Asset'),
       value('vendor', 'Vendor'),
-      value('warrantyEnd', 'Warranty end'),
+      value('endDate', 'Warranty end'),
       value('status', 'Status', status()),
     ],
     fields: [
@@ -195,6 +201,13 @@ export const resourceConfigs = {
     icon: 'building',
     service: vendorService,
     description: 'Manage suppliers, contracts, and procurement relationships.',
+    infoColumn: 'name',
+    detailFields: [
+      ['vendorCode', 'Vendor code'], ['name', 'Vendor'], ['contactName', 'Contact name'],
+      ['phone', 'Vendor No'], ['email', 'Email'], ['category', 'Category'],
+      ['address', 'Vendor Location'], ['status', 'Status'], ['assetCount', 'Assets'],
+      ['purchaseOrderCount', 'Purchase orders'],
+    ],
     stats: [
       { label: 'Total vendors', icon: 'building', tone: 'indigo', getValue: (rows) => rows.length },
       { label: 'Active', icon: 'shield', tone: 'green', getValue: (rows) => rows.filter((row) => row.status === 'ACTIVE').length },
@@ -225,6 +238,13 @@ export const resourceConfigs = {
     icon: 'server',
     service: licenseService,
     description: 'Manage enterprise software, subscriptions, and seat utilization.',
+    infoColumn: 'software',
+    detailFields: [
+      ['software', 'Software'], ['vendor', 'Vendor'], ['licenseType', 'License type'],
+      ['licenseKey', 'License key'], ['seatCount', 'Seats'], ['usedSeats', 'Used seats'],
+      ['startDate', 'Start date'], ['endDate', 'Renewal date'], ['purchaseCost', 'Purchase cost'],
+      ['status', 'Status'], ['notes', 'Notes'],
+    ],
     chart: {
       title: 'License utilization',
       description: 'Used seats compared with licensed capacity.',
@@ -286,6 +306,12 @@ export const resourceConfigs = {
     icon: 'pin',
     service: locationService,
     description: 'Organize assets across branches, buildings, floors, and rooms.',
+    infoColumn: 'name',
+    detailFields: [
+      ['code', 'Location code'], ['name', 'Location'], ['type', 'Type'],
+      ['parentLocation', 'Parent location'], ['branch', 'Branch'], ['address', 'Address'],
+      ['city', 'City'], ['country', 'Country'], ['assetCount', 'Assets'],
+    ],
     stats: [
       { label: 'Total locations', icon: 'pin', tone: 'indigo', getValue: (rows) => rows.length },
       { label: 'Branches', icon: 'building', tone: 'blue', getValue: (rows) => rows.filter((row) => row.type === 'BRANCH').length },
