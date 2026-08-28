@@ -20,5 +20,6 @@ public interface MaintenanceTicketRepository extends JpaRepository<MaintenanceTi
     boolean existsByTicketNumberIgnoreCaseAndIdNot(String ticketNumber, UUID id);
     long countByStatus(MaintenanceStatus status);
     long countByAsset_IdAndStatusIn(UUID assetId, List<MaintenanceStatus> statuses);
+    List<MaintenanceTicket> findAllByAsset_IdAndStatusInOrderByOpenedAtDesc(UUID assetId, List<MaintenanceStatus> statuses);
     List<MaintenanceTicket> findAllByDueDateLessThanEqualAndStatusIn(LocalDate date, List<MaintenanceStatus> statuses);
 }

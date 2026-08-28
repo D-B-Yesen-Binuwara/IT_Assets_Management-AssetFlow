@@ -76,16 +76,18 @@ public class MaintenanceService {
         ticket.setDescription(DomainSupport.optionalText(request.description()));
         ticket.setPriority(DomainSupport.enumValue(request.priority(), MaintenancePriority.class, MaintenancePriority.MEDIUM));
         ticket.setStatus(DomainSupport.enumValue(request.status(), MaintenanceStatus.class, MaintenanceStatus.OPEN));
+        ticket.setStartDate(request.startDate() == null ? LocalDate.now() : request.startDate());
         ticket.setDueDate(request.dueDate());
         ticket.setVendor(resolveVendor(request.vendorId()));
         ticket.setRequestedByEmployee(resolveEmployee(request.requestedByEmployeeId()));
         ticket.setAssignedToEmployee(resolveEmployee(request.assignedToEmployeeId()));
         ticket.setCost(request.cost() == null ? BigDecimal.ZERO : nonNegative(request.cost(), "Cost"));
         ticket.setResolution(DomainSupport.optionalText(request.resolution()));
+        validateDates(ticket);
         applyTimestamps(ticket);
         validateAssetStateForMaintenance(asset, ticket.getStatus());
         MaintenanceTicket saved = ticketRepository.save(ticket);
-        syncAssetStatus(saved);
+        syncAssetStatus(saved.getAsset());
         DomainSupport.audit(auditLogRepository, appUserRepository, actor, "MAINTENANCE_TICKET", saved.getId(), "CREATED", null);
         return response(saved);
     }
@@ -102,16 +104,18 @@ public class MaintenanceService {
         if (request.description() != null) ticket.setDescription(DomainSupport.optionalText(request.description()));
         if (request.priority() != null) ticket.setPriority(DomainSupport.enumValue(request.priority(), MaintenancePriority.class, ticket.getPriority()));
         if (request.status() != null) ticket.setStatus(DomainSupport.enumValue(request.status(), MaintenanceStatus.class, ticket.getStatus()));
+        if (request.startDate() != null) ticket.setStartDate(request.startDate());
         if (request.dueDate() != null) ticket.setDueDate(request.dueDate());
         if (request.vendorId() != null) ticket.setVendor(resolveVendor(request.vendorId()));
         if (request.requestedByEmployeeId() != null) ticket.setRequestedByEmployee(resolveEmployee(request.requestedByEmployeeId()));
         if (request.assignedToEmployeeId() != null) ticket.setAssignedToEmployee(resolveEmployee(request.assignedToEmployeeId()));
         if (request.cost() != null) ticket.setCost(nonNegative(request.cost(), "Cost"));
         if (request.resolution() != null) ticket.setResolution(DomainSupport.optionalText(request.resolution()));
+        validateDates(ticket);
         applyTimestamps(ticket);
         validateAssetStateForMaintenance(ticket.getAsset(), ticket.getStatus());
         MaintenanceTicket saved = ticketRepository.save(ticket);
-        syncAssetStatus(saved);
+        syncAssetStatus(saved.getAsset());
         DomainSupport.audit(auditLogRepository, appUserRepository, actor, "MAINTENANCE_TICKET", saved.getId(), "UPDATED", null);
         return response(saved);
     }
@@ -119,10 +123,11 @@ public class MaintenanceService {
     @Transactional
     public void delete(UUID id, AuthenticatedUser actor) {
         MaintenanceTicket ticket = ticketRepository.findById(id).orElseThrow(() -> DomainSupport.notFound("Maintenance ticket"));
-        ticket.setStatus(MaintenanceStatus.CANCELLED);
-        ticketRepository.save(ticket);
-        syncAssetStatus(ticket);
-        DomainSupport.audit(auditLogRepository, appUserRepository, actor, "MAINTENANCE_TICKET", id, "CANCELLED", null);
+        Asset asset = ticket.getAsset();
+        ticketRepository.delete(ticket);
+        ticketRepository.flush();
+        syncAssetStatus(asset);
+        DomainSupport.audit(auditLogRepository, appUserRepository, actor, "MAINTENANCE_TICKET", id, "DELETED", null);
     }
 
     private void validateAssetStateForMaintenance(Asset asset, MaintenanceStatus status) {
@@ -132,8 +137,7 @@ public class MaintenanceService {
         }
     }
 
-    private void syncAssetStatus(MaintenanceTicket ticket) {
-        Asset asset = ticket.getAsset();
+    private void syncAssetStatus(Asset asset) {
         long activeTickets = ticketRepository.countByAsset_IdAndStatusIn(asset.getId(), List.of(MaintenanceStatus.OPEN, MaintenanceStatus.IN_PROGRESS, MaintenanceStatus.ON_HOLD));
         if (activeTickets > 0) {
             asset.setStatus(AssetStatus.UNDER_MAINTENANCE);
@@ -149,6 +153,11 @@ public class MaintenanceService {
             ticket.setCompletedAt(Instant.now());
             if (ticket.getStartedAt() == null) ticket.setStartedAt(ticket.getCompletedAt());
         }
+    }
+
+    private void validateDates(MaintenanceTicket ticket) {
+        if (ticket.getStartDate() == null) throw new ApiException(HttpStatus.BAD_REQUEST, "Maintenance start date is required.");
+        if (ticket.getDueDate() != null && ticket.getDueDate().isBefore(ticket.getStartDate())) throw new ApiException(HttpStatus.BAD_REQUEST, "Maintenance due date cannot be before the start date.");
     }
 
     private BigDecimal nonNegative(BigDecimal value, String field) {
@@ -177,6 +186,6 @@ public class MaintenanceService {
         Employee requested = ticket.getRequestedByEmployee();
         Employee assigned = ticket.getAssignedToEmployee();
         Vendor vendor = ticket.getVendor();
-        return new MaintenanceResponse(ticket.getId(), ticket.getTicketNumber(), asset.getId(), asset.getAssetTag(), asset.getName(), ticket.getIssue(), ticket.getDescription(), ticket.getPriority(), ticket.getStatus(), requested == null ? null : requested.getId(), requested == null ? null : DomainSupport.fullName(requested.getFirstName(), requested.getLastName()), assigned == null ? null : assigned.getId(), assigned == null ? null : DomainSupport.fullName(assigned.getFirstName(), assigned.getLastName()), vendor == null ? null : vendor.getId(), vendor == null ? null : vendor.getName(), ticket.getOpenedAt(), ticket.getDueDate(), ticket.getStartedAt(), ticket.getCompletedAt(), ticket.getCost(), ticket.getResolution(), ticket.getCreatedAt(), ticket.getUpdatedAt());
+        return new MaintenanceResponse(ticket.getId(), ticket.getTicketNumber(), asset.getId(), asset.getAssetTag(), asset.getName(), ticket.getIssue(), ticket.getDescription(), ticket.getPriority(), ticket.getStatus(), requested == null ? null : requested.getId(), requested == null ? null : DomainSupport.fullName(requested.getFirstName(), requested.getLastName()), assigned == null ? null : assigned.getId(), assigned == null ? null : DomainSupport.fullName(assigned.getFirstName(), assigned.getLastName()), vendor == null ? null : vendor.getId(), vendor == null ? null : vendor.getName(), ticket.getOpenedAt(), ticket.getStartDate(), ticket.getDueDate(), ticket.getStartedAt(), ticket.getCompletedAt(), ticket.getCost(), ticket.getResolution(), ticket.getCreatedAt(), ticket.getUpdatedAt());
     }
 }

@@ -58,6 +58,9 @@ public class MaintenanceTicket extends TimestampedEntity {
     @Column(name = "opened_at", nullable = false)
     private Instant openedAt;
 
+    @Column(name = "start_date", nullable = false)
+    private LocalDate startDate = LocalDate.now();
+
     @Column(name = "due_date")
     private LocalDate dueDate;
 

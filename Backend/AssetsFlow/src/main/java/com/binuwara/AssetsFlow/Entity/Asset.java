@@ -70,7 +70,7 @@ public class Asset extends TimestampedEntity {
 
     @JdbcTypeCode(Types.CHAR)
     @Column(columnDefinition = "char(3)", nullable = false, length = 3)
-    private String currency = "USD";
+    private String currency = "LKR";
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_id")
